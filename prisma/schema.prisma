@@ -1,0 +1,129 @@
+﻿generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student  Student?
+  lecturer Lecturer?
+  admin    Admin?
+
+  @@map("users")
+}
+
+model Student {
+  id          Int    @id @default(autoincrement())
+  userId      Int    @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batchNumber String
+
+  enrollments       Enrollment[]
+  attendanceRecords AttendanceRecord[]
+
+  @@map("students")
+}
+
+model Lecturer {
+  id         Int    @id @default(autoincrement())
+  userId     Int    @unique
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department String
+
+  modules Module[]
+
+  @@map("lecturers")
+}
+
+model Admin {
+  id         Int    @id @default(autoincrement())
+  userId     Int    @unique
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminLevel String
+
+  @@map("admins")
+}
+
+model Module {
+  id         Int    @id @default(autoincrement())
+  moduleCode String @unique
+  title      String
+  credits    Int
+
+  lecturerId Int
+  lecturer   Lecturer @relation(fields: [lecturerId], references: [id])
+
+  sessions    Session[]
+  enrollments Enrollment[]
+
+  @@map("modules")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @db.Date
+  startTime DateTime @db.Time
+  endTime   DateTime @db.Time
+  isLocked  Boolean  @default(false)
+
+  moduleId Int
+  module   Module @relation(fields: [moduleId], references: [id])
+
+  attendanceRecords AttendanceRecord[]
+
+  @@map("sessions")
+}
+
+model AttendanceRecord {
+  id        Int              @id @default(autoincrement())
+  status    AttendanceStatus
+  timestamp DateTime         @default(now())
+
+  sessionId Int
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  // Prevents a student being marked twice for the same session
+  // (relevant once both QR scan and manual marking exist)
+  @@unique([sessionId, studentId])
+  @@map("attendance_records")
+}
+
+model Enrollment {
+  id             Int      @id @default(autoincrement())
+  enrollmentDate DateTime @default(now())
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  moduleId Int
+  module   Module @relation(fields: [moduleId], references: [id])
+
+  // Prevents duplicate enrollment of the same student in the same module
+  @@unique([studentId, moduleId])
+  @@map("enrollments")
+}
