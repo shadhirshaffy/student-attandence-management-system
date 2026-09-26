@@ -48,8 +48,8 @@ $env:SPRING_PROFILES_ACTIVE="dev"
 Required development database variables:
 
 ```text
-DATABASE_URL=jdbc:postgresql://localhost:5432/student_attendance
-DATABASE_USERNAME=your_database_user
+DATABASE_URL=jdbc:postgresql://localhost:5432/attendence_db
+DATABASE_USERNAME=postgres
 DATABASE_PASSWORD=your_database_password
 ```
 
