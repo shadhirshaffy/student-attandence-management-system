@@ -30,5 +30,6 @@ const navItems = [
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/students', label: 'Students' },
   { to: '/admin/lecturers', label: 'Lecturers' },
+  { to: '/admin/modules', label: 'Modules' },
 ]
 </script>

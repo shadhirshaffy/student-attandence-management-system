@@ -6,16 +6,19 @@ import java.util.Optional;
 import com.studentattendance.entity.Enrollment;
 import com.studentattendance.entity.Module;
 import com.studentattendance.entity.Student;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     List<Enrollment> findByStudent(Student student);
 
+    @EntityGraph(attributePaths = {"module", "module.lecturer", "module.lecturer.user"})
     List<Enrollment> findByStudentId(Long studentId);
 
     List<Enrollment> findByModule(Module module);
 
+    @EntityGraph(attributePaths = {"student", "student.user"})
     List<Enrollment> findByModuleId(Long moduleId);
 
     Optional<Enrollment> findByStudentAndModule(Student student, Module module);

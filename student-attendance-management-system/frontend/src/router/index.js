@@ -2,10 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 
 import AdminDashboardView from '../views/AdminDashboardView.vue'
+import AdminModulesView from '../views/AdminModulesView.vue'
 import AdminUsersView from '../views/AdminUsersView.vue'
+import CreateSessionView from '../views/CreateSessionView.vue'
 import HomeView from '../views/HomeView.vue'
 import LecturerDashboardView from '../views/LecturerDashboardView.vue'
+import LecturerSessionsView from '../views/LecturerSessionsView.vue'
 import LoginView from '../views/LoginView.vue'
+import MyModulesView from '../views/MyModulesView.vue'
+import SessionDetailsView from '../views/SessionDetailsView.vue'
 import StudentDashboardView from '../views/StudentDashboardView.vue'
 
 const routes = [
@@ -38,6 +43,12 @@ const routes = [
     },
   },
   {
+    path: '/admin/modules',
+    name: 'admin-modules',
+    component: AdminModulesView,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
     path: '/admin/students',
     name: 'admin-students',
     component: AdminUsersView,
@@ -68,9 +79,39 @@ const routes = [
     meta: { requiresAuth: true, roles: ['LECTURER'] },
   },
   {
+    path: '/lecturer/modules',
+    name: 'lecturer-modules',
+    component: MyModulesView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
+    path: '/lecturer/sessions',
+    name: 'lecturer-sessions',
+    component: LecturerSessionsView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
+    path: '/lecturer/sessions/create',
+    name: 'lecturer-create-session',
+    component: CreateSessionView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
+    path: '/lecturer/sessions/:id',
+    name: 'lecturer-session-details',
+    component: SessionDetailsView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
     path: '/student',
     name: 'student-dashboard',
     component: StudentDashboardView,
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
+  {
+    path: '/student/modules',
+    name: 'student-modules',
+    component: MyModulesView,
     meta: { requiresAuth: true, roles: ['STUDENT'] },
   },
 ]

@@ -5,7 +5,7 @@
         <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Admin</p>
         <h1 class="mt-1 text-3xl font-bold text-slate-950">Admin dashboard</h1>
         <p class="mt-2 max-w-2xl text-slate-600">
-          Manage user accounts and role profiles for the Student Attendance Management System.
+          Manage user accounts, role profiles, modules, lecturers, and enrollments for the Student Attendance Management System.
         </p>
       </div>
 
@@ -15,6 +15,13 @@
           <p class="mt-2 text-3xl font-bold text-slate-950">{{ card.value }}</p>
         </div>
       </div>
+
+      <RouterLink
+        to="/admin/modules"
+        class="inline-flex rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+      >
+        Manage modules
+      </RouterLink>
     </section>
   </AdminLayout>
 </template>

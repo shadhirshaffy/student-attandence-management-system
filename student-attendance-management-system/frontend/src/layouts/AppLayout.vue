@@ -7,7 +7,7 @@
         </RouterLink>
         <div class="flex items-center gap-3">
           <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-            Phase 4
+            Phase 6
           </span>
           <button
             v-if="auth.isAuthenticated"
