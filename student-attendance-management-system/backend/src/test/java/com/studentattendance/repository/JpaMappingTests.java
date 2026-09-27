@@ -16,14 +16,17 @@ import com.studentattendance.entity.Role;
 import com.studentattendance.entity.Session;
 import com.studentattendance.entity.Student;
 import com.studentattendance.entity.User;
+import com.studentattendance.StudentAttendanceBackendApplication;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
-@DataJpaTest
+@SpringBootTest(classes = StudentAttendanceBackendApplication.class)
 @ActiveProfiles("test")
+@Transactional
 class JpaMappingTests {
 
     @Autowired

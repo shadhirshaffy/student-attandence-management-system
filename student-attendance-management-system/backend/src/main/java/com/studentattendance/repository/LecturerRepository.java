@@ -9,5 +9,9 @@ public interface LecturerRepository extends JpaRepository<Lecturer, Long> {
 
     Optional<Lecturer> findByEmployeeNumber(String employeeNumber);
 
+    Optional<Lecturer> findByUserId(Long userId);
+
     boolean existsByEmployeeNumber(String employeeNumber);
+
+    boolean existsByEmployeeNumberAndIdNot(String employeeNumber, Long id);
 }
