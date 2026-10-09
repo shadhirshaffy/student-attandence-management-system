@@ -151,12 +151,31 @@ npm run build
 
 The test suite covers login, token validation, authorization, user and enrollment duplicates, lecturer session ownership, QR lifecycle and eligibility, manual attendance, statistics, report exports, concurrent QR requests, schema constraints, and CORS.
 
+## Docker deployment
+
+Copy the production environment example and set private values before starting the stack:
+
+```powershell
+Copy-Item .env.production.example .env.production
+```
+
+At minimum, change `POSTGRES_PASSWORD`, `DATABASE_PASSWORD`, and `JWT_SECRET`. Then start PostgreSQL, the backend, and the frontend:
+
+```powershell
+docker compose --env-file .env.production up --build
+```
+
+The frontend is published at `http://localhost:5173`, the backend API at `http://localhost:8080/api`, and Swagger at `http://localhost:8080/swagger-ui.html`.
+
+For shared or production deployments, keep `APP_SEED_ENABLED=false`, use a private JWT secret, and replace the local `FRONTEND_BASE_URL` / `VITE_API_BASE_URL` values with the deployed URLs.
+
 ## Project structure
 
 ```text
 student-attendance-management-system/
 ├── backend/
 │   ├── .env.example
+│   ├── Dockerfile
 │   ├── src/main/java/com/studentattendance/
 │   │   ├── controller/     REST endpoints
 │   │   ├── service/        business rules and exports
@@ -167,12 +186,15 @@ student-attendance-management-system/
 │   └── src/test/           integration, schema, and export tests
 ├── frontend/
 │   ├── .env.example
+│   ├── Dockerfile
+│   ├── playwright.config.js
 │   └── src/
 │       ├── views/          role-specific pages
 │       ├── stores/         Pinia state and API actions
 │       ├── components/     shared interface components
 │       ├── layouts/        application shells
 │       └── router/         navigation guards
+├── docker-compose.yml
 └── README.md
 ```
 

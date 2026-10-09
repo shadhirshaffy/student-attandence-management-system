@@ -37,6 +37,20 @@
             </div>
           </div>
 
+          <div v-if="attendance.editable" class="border-b border-slate-200 p-4">
+            <label class="block text-sm font-medium text-slate-700" for="manual-reason">Reason for manual changes</label>
+            <textarea
+              id="manual-reason"
+              v-model.trim="changeReason"
+              maxlength="500"
+              rows="2"
+              class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              placeholder="Example: Student had QR scanner issue."
+              required
+            />
+            <p class="mt-1 text-xs text-slate-500">Saved with each changed record for audit history.</p>
+          </div>
+
           <div v-if="attendance.students.length === 0" class="p-8 text-center text-sm text-slate-500">
             No students are enrolled in this module.
           </div>
@@ -48,6 +62,7 @@
                   <th class="px-4 py-3">Student Name</th>
                   <th class="px-4 py-3">Status</th>
                   <th class="px-4 py-3">Last Marked</th>
+                  <th class="px-4 py-3">Audit</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
@@ -81,6 +96,12 @@
                     </span>
                   </td>
                   <td class="px-4 py-3 text-slate-500">{{ student.markedAt || 'Not marked' }}</td>
+                  <td class="px-4 py-3 text-slate-500">
+                    <div>{{ student.markedByName || 'No marker yet' }}</div>
+                    <div v-if="student.manualChangeReason" class="mt-1 max-w-xs text-xs text-slate-400">
+                      {{ student.manualChangeReason }}
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -92,7 +113,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../layouts/AppLayout.vue'
 import { useAttendanceStore } from '../stores/attendanceStore'
@@ -100,6 +121,7 @@ import { useAttendanceStore } from '../stores/attendanceStore'
 const route = useRoute()
 const store = useAttendanceStore()
 const selectedStatuses = reactive({})
+const changeReason = ref('')
 
 const attendance = computed(() => store.manualAttendance)
 const title = computed(() => attendance.value ? `${attendance.value.moduleCode} - ${attendance.value.moduleName}` : 'Attendance')
@@ -131,11 +153,17 @@ function markAll(status) {
 }
 
 async function save() {
+  if (!changeReason.value) {
+    store.error = 'Enter a reason before saving manual attendance.'
+    return
+  }
   const records = attendance.value.students.map((student) => ({
     studentId: student.studentId,
     status: selectedStatuses[student.studentId],
+    reason: changeReason.value,
   }))
   await store.saveManualAttendance(route.params.id, records)
+  changeReason.value = ''
 }
 
 function statusClass(status) {

@@ -94,6 +94,10 @@ public class ManualAttendanceService {
             if (item == null) {
                 continue;
             }
+            String reason = item.getReason() == null ? "" : item.getReason().trim();
+            if (reason.isBlank()) {
+                throw new BadRequestException("A reason is required for manual attendance changes.");
+            }
 
             AttendanceRecord record = existingByStudentId.get(student.getId());
             if (record == null) {
@@ -104,6 +108,8 @@ public class ManualAttendanceService {
             record.setStatus(item.getStatus());
             record.setMarkingMethod(MarkingMethod.MANUAL);
             record.setMarkedAt(now);
+            record.setMarkedBy(lecturer.getUser());
+            record.setManualChangeReason(reason);
             attendanceRecordRepository.save(record);
         }
 

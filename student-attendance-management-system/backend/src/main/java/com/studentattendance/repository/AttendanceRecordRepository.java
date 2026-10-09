@@ -18,7 +18,7 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     List<AttendanceRecord> findBySession(Session session);
 
-    @EntityGraph(attributePaths = {"student", "student.user"})
+    @EntityGraph(attributePaths = {"student", "student.user", "markedBy"})
     List<AttendanceRecord> findBySessionId(Long sessionId);
 
     Optional<AttendanceRecord> findByStudentAndSession(Student student, Session session);

@@ -15,7 +15,9 @@ public record ManualAttendanceStudentResponse(
         Long attendanceRecordId,
         AttendanceStatus status,
         MarkingMethod markingMethod,
-        LocalDateTime markedAt) {
+        LocalDateTime markedAt,
+        String markedByName,
+        String manualChangeReason) {
 
     public static ManualAttendanceStudentResponse from(Student student, AttendanceRecord record) {
         return new ManualAttendanceStudentResponse(
@@ -26,6 +28,8 @@ public record ManualAttendanceStudentResponse(
                 record == null ? null : record.getId(),
                 record == null ? null : record.getStatus(),
                 record == null ? null : record.getMarkingMethod(),
-                record == null ? null : record.getMarkedAt());
+                record == null ? null : record.getMarkedAt(),
+                record == null || record.getMarkedBy() == null ? null : record.getMarkedBy().getName(),
+                record == null ? null : record.getManualChangeReason());
     }
 }

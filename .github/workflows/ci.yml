@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
@@ -23,7 +23,9 @@ jobs:
 
       - name: Run backend tests
         working-directory: student-attendance-management-system/backend
-        run: ./mvnw clean verify
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean verify
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,6 +37,18 @@ jobs:
       - name: Install frontend dependencies
         working-directory: student-attendance-management-system/frontend
         run: npm ci
+
+      - name: Run frontend unit tests
+        working-directory: student-attendance-management-system/frontend
+        run: npm test
+
+      - name: Install Playwright browsers
+        working-directory: student-attendance-management-system/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run frontend end-to-end tests
+        working-directory: student-attendance-management-system/frontend
+        run: npm run test:e2e
 
       - name: Build frontend
         working-directory: student-attendance-management-system/frontend

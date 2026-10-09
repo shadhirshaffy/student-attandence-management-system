@@ -59,6 +59,13 @@ public class AttendanceRecord {
     @Column(name = "marked_at", nullable = false)
     private LocalDateTime markedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "marked_by_user_id")
+    private User markedBy;
+
+    @Column(name = "manual_change_reason", length = 500)
+    private String manualChangeReason;
+
     @PrePersist
     void onCreate() {
         if (markedAt == null) {
@@ -112,5 +119,21 @@ public class AttendanceRecord {
 
     public void setMarkedAt(LocalDateTime markedAt) {
         this.markedAt = markedAt;
+    }
+
+    public User getMarkedBy() {
+        return markedBy;
+    }
+
+    public void setMarkedBy(User markedBy) {
+        this.markedBy = markedBy;
+    }
+
+    public String getManualChangeReason() {
+        return manualChangeReason;
+    }
+
+    public void setManualChangeReason(String manualChangeReason) {
+        this.manualChangeReason = manualChangeReason;
     }
 }

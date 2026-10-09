@@ -497,7 +497,7 @@ class AuthSecurityTests {
                         .header("Authorization", "Bearer " + lecturerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"records":[{"studentId":%d,"status":"PRESENT"}]}
+                                {"records":[{"studentId":%d,"status":"PRESENT","reason":"Initial correction"}]}
                                 """.formatted(firstStudentId)))
                 .andExpect(status().isBadRequest());
 
@@ -509,7 +509,7 @@ class AuthSecurityTests {
                         .header("Authorization", "Bearer " + otherLecturerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"records":[{"studentId":%d,"status":"PRESENT"}]}
+                                {"records":[{"studentId":%d,"status":"PRESENT","reason":"Initial correction"}]}
                                 """.formatted(firstStudentId)))
                 .andExpect(status().isForbidden());
 
@@ -517,7 +517,7 @@ class AuthSecurityTests {
                         .header("Authorization", "Bearer " + lecturerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"records":[{"studentId":%d,"status":"PRESENT"}]}
+                                {"records":[{"studentId":%d,"status":"PRESENT","reason":"Initial correction"}]}
                                 """.formatted(outsideStudentId)))
                 .andExpect(status().isBadRequest());
 
@@ -525,7 +525,7 @@ class AuthSecurityTests {
                         .header("Authorization", "Bearer " + lecturerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"records":[{"studentId":%d,"status":"PRESENT"},{"studentId":%d,"status":"ABSENT"}]}
+                                {"records":[{"studentId":%d,"status":"PRESENT","reason":"Duplicate check"},{"studentId":%d,"status":"ABSENT","reason":"Duplicate check"}]}
                                 """.formatted(firstStudentId, firstStudentId)))
                 .andExpect(status().isBadRequest());
 
@@ -535,8 +535,8 @@ class AuthSecurityTests {
                         .content("""
                                 {
                                   "records":[
-                                    {"studentId":%d,"status":"PRESENT"},
-                                    {"studentId":%d,"status":"ABSENT"}
+                                    {"studentId":%d,"status":"PRESENT","reason":"QR scanner issue"},
+                                    {"studentId":%d,"status":"ABSENT","reason":"Student left early"}
                                   ]
                                 }
                                 """.formatted(firstStudentId, secondStudentId)))
@@ -545,6 +545,8 @@ class AuthSecurityTests {
                 .andExpect(jsonPath("$.students[0].markingMethod").value("MANUAL"))
                 .andExpect(jsonPath("$.students[0].attendanceRecordId").isNumber())
                 .andExpect(jsonPath("$.students[0].status").value("PRESENT"))
+                .andExpect(jsonPath("$.students[0].markedByName").value("Lecturer User"))
+                .andExpect(jsonPath("$.students[0].manualChangeReason").value("QR scanner issue"))
                 .andExpect(jsonPath("$.students[1].status").value("ABSENT"))
                 .andReturn();
 
@@ -555,11 +557,12 @@ class AuthSecurityTests {
                         .header("Authorization", "Bearer " + lecturerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"records":[{"studentId":%d,"status":"ABSENT"}]}
+                                {"records":[{"studentId":%d,"status":"ABSENT","reason":"Corrected after lecturer review"}]}
                                 """.formatted(firstStudentId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.students[0].attendanceRecordId").value(firstRecordId))
-                .andExpect(jsonPath("$.students[0].status").value("ABSENT"));
+                .andExpect(jsonPath("$.students[0].status").value("ABSENT"))
+                .andExpect(jsonPath("$.students[0].manualChangeReason").value("Corrected after lecturer review"));
 
         mockMvc.perform(get("/api/sessions/{id}/attendance/manual", otherSessionId)
                         .header("Authorization", "Bearer " + lecturerToken))
@@ -573,7 +576,7 @@ class AuthSecurityTests {
                         .header("Authorization", "Bearer " + lecturerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"records":[{"studentId":%d,"status":"PRESENT"}]}
+                                {"records":[{"studentId":%d,"status":"PRESENT","reason":"Late correction"}]}
                                 """.formatted(firstStudentId)))
                 .andExpect(status().isBadRequest());
     }
@@ -948,7 +951,7 @@ class AuthSecurityTests {
                 .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
         mockMvc.perform(post("/api/attendance/qr").header("Authorization", "Bearer " + student)
                 .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isConflict());
-        String manual = "{\"records\":[{\"studentId\":" + studentId + ",\"status\":\"PRESENT\"}]}";
+        String manual = "{\"records\":[{\"studentId\":" + studentId + ",\"status\":\"PRESENT\",\"reason\":\"Workflow correction\"}]}";
         mockMvc.perform(put("/api/sessions/{id}/attendance/manual", session).header("Authorization", "Bearer " + lecturer)
                 .contentType(MediaType.APPLICATION_JSON).content(manual)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.students[0].markingMethod").value("MANUAL"));
