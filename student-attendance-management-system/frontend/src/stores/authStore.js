@@ -7,7 +7,8 @@ const userKey = 'auth_user'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem(tokenKey),
-    user: JSON.parse(localStorage.getItem(userKey) || 'null'),
+    // Revalidate saved tokens with the server before trusting a saved role.
+    user: null,
     loading: false,
     error: '',
   }),

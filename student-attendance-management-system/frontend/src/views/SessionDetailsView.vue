@@ -3,11 +3,11 @@
     <section class="space-y-6">
       <RouterLink to="/lecturer/sessions" class="text-sm font-semibold text-blue-700 hover:text-blue-800">Back to sessions</RouterLink>
 
-      <div v-if="store.error" class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{{ store.error }}</div>
-      <div v-if="store.success" class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ store.success }}</div>
+      <AppAlert v-if="store.error" type="error" :message="store.error" />
+      <AppAlert v-if="store.success" type="success" :message="store.success" />
 
-      <section v-if="store.loading" class="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
-        Loading session...
+      <section v-if="store.loading" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <LoadingSpinner label="Loading session..." />
       </section>
 
       <section v-else-if="session" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -17,9 +17,7 @@
             <h1 class="mt-1 text-3xl font-bold text-slate-950">{{ session.moduleName }}</h1>
             <p class="mt-2 text-sm text-slate-500">{{ session.sessionDate }} · {{ session.startTime }} - {{ session.endTime }}</p>
           </div>
-          <span :class="statusClass(session.status)" class="w-fit rounded-full px-3 py-1 text-xs font-semibold">
-            {{ session.status }}
-          </span>
+          <StatusBadge :value="session.status" class="w-fit" />
         </div>
 
         <dl class="mt-6 grid gap-4 md:grid-cols-3">
@@ -38,6 +36,19 @@
         </dl>
 
         <div class="mt-6 flex flex-wrap gap-3">
+          <RouterLink
+            :to="`/lecturer/sessions/${session.id}/attendance`"
+            class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Manual attendance
+          </RouterLink>
+          <RouterLink
+            v-if="session.status === 'ACTIVE' && !session.locked"
+            :to="`/lecturer/sessions/${session.id}/qr`"
+            class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Show QR
+          </RouterLink>
           <button
             v-if="session.status === 'SCHEDULED'"
             class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
@@ -71,6 +82,9 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import AppAlert from '../components/AppAlert.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
+import StatusBadge from '../components/StatusBadge.vue'
 import AppLayout from '../layouts/AppLayout.vue'
 import { useSessionsStore } from '../stores/sessionsStore'
 
@@ -81,19 +95,11 @@ const session = computed(() => store.currentSession)
 
 onMounted(() => {
   store.clearMessages()
-  store.fetchSession(route.params.id)
+  return store.fetchSession(route.params.id)
 })
 
 async function transition(action) {
   await store.transitionSession(route.params.id, action)
 }
 
-function statusClass(status) {
-  return {
-    SCHEDULED: 'bg-slate-100 text-slate-700',
-    ACTIVE: 'bg-emerald-50 text-emerald-700',
-    LOCKED: 'bg-amber-50 text-amber-700',
-    COMPLETED: 'bg-blue-50 text-blue-700',
-  }[status] || 'bg-slate-100 text-slate-700'
-}
 </script>

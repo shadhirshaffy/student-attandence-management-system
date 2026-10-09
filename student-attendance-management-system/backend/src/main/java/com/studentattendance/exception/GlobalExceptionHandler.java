@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -69,5 +71,16 @@ public class GlobalExceptionHandler {
                 "timestamp", Instant.now().toString(),
                 "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "error", "Unexpected server error"));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataConflict() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "status", 409, "error", "Duplicate record or conflicting related data."));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidParameter() {
+        return ResponseEntity.badRequest().body(Map.of("status", 400, "error", "Invalid request parameter."));
     }
 }

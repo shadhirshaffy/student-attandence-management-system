@@ -4,16 +4,22 @@ import { useAuthStore } from '../stores/authStore'
 import AdminDashboardView from '../views/AdminDashboardView.vue'
 import AdminModulesView from '../views/AdminModulesView.vue'
 import AdminUsersView from '../views/AdminUsersView.vue'
+import AttendanceReportsView from '../views/AttendanceReportsView.vue'
 import CreateSessionView from '../views/CreateSessionView.vue'
 import HomeView from '../views/HomeView.vue'
 import LecturerDashboardView from '../views/LecturerDashboardView.vue'
 import LecturerSessionsView from '../views/LecturerSessionsView.vue'
 import LoginView from '../views/LoginView.vue'
+import ManualAttendanceView from '../views/ManualAttendanceView.vue'
 import MyModulesView from '../views/MyModulesView.vue'
 import SessionDetailsView from '../views/SessionDetailsView.vue'
+import SessionQrDisplayView from '../views/SessionQrDisplayView.vue'
 import StudentDashboardView from '../views/StudentDashboardView.vue'
+import StudentAttendanceHistoryView from '../views/StudentAttendanceHistoryView.vue'
+import StudentQrScanView from '../views/StudentQrScanView.vue'
 
 const routes = [
+  { path: '/:pathMatch(.*)*', redirect: '/' },
   {
     path: '/',
     name: 'home',
@@ -46,6 +52,30 @@ const routes = [
     path: '/admin/modules',
     name: 'admin-modules',
     component: AdminModulesView,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
+    path: '/admin/enrollments',
+    name: 'admin-enrollments',
+    component: AdminModulesView,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
+    path: '/admin/sessions',
+    name: 'admin-sessions',
+    component: AttendanceReportsView,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
+    path: '/admin/attendance',
+    name: 'admin-attendance',
+    component: AttendanceReportsView,
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+  },
+  {
+    path: '/admin/reports',
+    name: 'admin-reports',
+    component: AttendanceReportsView,
     meta: { requiresAuth: true, roles: ['ADMIN'] },
   },
   {
@@ -91,6 +121,18 @@ const routes = [
     meta: { requiresAuth: true, roles: ['LECTURER'] },
   },
   {
+    path: '/lecturer/reports',
+    name: 'lecturer-reports',
+    component: AttendanceReportsView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
+    path: '/lecturer/attendance',
+    name: 'lecturer-attendance',
+    component: LecturerSessionsView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
     path: '/lecturer/sessions/create',
     name: 'lecturer-create-session',
     component: CreateSessionView,
@@ -103,6 +145,18 @@ const routes = [
     meta: { requiresAuth: true, roles: ['LECTURER'] },
   },
   {
+    path: '/lecturer/sessions/:id/attendance',
+    name: 'lecturer-manual-attendance',
+    component: ManualAttendanceView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
+    path: '/lecturer/sessions/:id/qr',
+    name: 'lecturer-session-qr',
+    component: SessionQrDisplayView,
+    meta: { requiresAuth: true, roles: ['LECTURER'] },
+  },
+  {
     path: '/student',
     name: 'student-dashboard',
     component: StudentDashboardView,
@@ -112,6 +166,18 @@ const routes = [
     path: '/student/modules',
     name: 'student-modules',
     component: MyModulesView,
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
+  {
+    path: '/student/scan',
+    name: 'student-qr-scan',
+    component: StudentQrScanView,
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
+  },
+  {
+    path: '/student/attendance-history',
+    name: 'student-attendance-history',
+    component: StudentAttendanceHistoryView,
     meta: { requiresAuth: true, roles: ['STUDENT'] },
   },
 ]
@@ -139,7 +205,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return '/login'
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) {

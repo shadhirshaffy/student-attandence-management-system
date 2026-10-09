@@ -9,6 +9,7 @@ export const useSessionsStore = defineStore('sessions', {
   state: () => ({
     sessions: [],
     currentSession: null,
+    sessionQr: null,
     loading: false,
     saving: false,
     error: '',
@@ -77,6 +78,21 @@ export const useSessionsStore = defineStore('sessions', {
         throw error
       } finally {
         this.saving = false
+      }
+    },
+
+    async fetchSessionQr(id) {
+      this.loading = true
+      this.error = ''
+      try {
+        const { data } = await api.get(`/sessions/${id}/qr`)
+        this.sessionQr = data
+        return data
+      } catch (error) {
+        this.error = message(error)
+        throw error
+      } finally {
+        this.loading = false
       }
     },
 

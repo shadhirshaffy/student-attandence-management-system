@@ -1,47 +1,32 @@
+
 <template>
   <AppLayout>
-    <section class="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-      <div>
+    <section class="flex min-h-[65vh] items-center justify-center px-4 py-12">
+      <div class="mx-auto max-w-4xl text-center">
+
         <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">
-          Authentication ready
+          Welcome to Student Attendance Management
         </p>
-        <h1 class="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+
+        <h1
+          class="mt-5 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl"
+        >
           Student Attendance Management System
         </h1>
-        <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-          The application now supports JWT login, protected routes, role redirects,
-          and session restore for development testing.
+
+        <p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+          A simple and efficient platform for managing student attendance,
+          monitoring attendance records, and keeping academic information
+          organized in one place.
         </p>
+
         <RouterLink
           to="/login"
-          class="mt-7 inline-flex rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+          class="mt-8 inline-flex rounded-md bg-blue-700 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-800"
         >
           Sign in
         </RouterLink>
-      </div>
 
-      <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-950">Frontend status</h2>
-        <dl class="mt-5 space-y-4 text-sm">
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-slate-500">Framework</dt>
-            <dd class="font-medium text-slate-900">Vue 3</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-slate-500">Router</dt>
-            <dd class="font-medium text-slate-900">Configured</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-slate-500">State</dt>
-            <dd class="font-medium text-slate-900">Pinia ready</dd>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <dt class="text-slate-500">API base URL</dt>
-            <dd class="break-all text-right font-medium text-slate-900">
-              {{ apiBaseUrl }}
-            </dd>
-          </div>
-        </dl>
       </div>
     </section>
   </AppLayout>
@@ -49,5 +34,4 @@
 
 <script setup>
 import AppLayout from '../layouts/AppLayout.vue'
-import { apiBaseUrl } from '../services/api'
 </script>

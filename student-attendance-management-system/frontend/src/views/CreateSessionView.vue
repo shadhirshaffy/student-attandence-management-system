@@ -68,7 +68,7 @@ const form = reactive({
 const activeModules = computed(() => modulesStore.myModules.filter((module) => module.active))
 
 onMounted(() => {
-  modulesStore.fetchLecturerModules()
+  return modulesStore.fetchLecturerModules()
   sessionsStore.clearMessages()
 })
 

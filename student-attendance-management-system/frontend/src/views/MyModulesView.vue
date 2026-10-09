@@ -51,9 +51,9 @@ const subtitle = computed(() =>
 
 onMounted(() => {
   if (auth.role === 'LECTURER') {
-    store.fetchLecturerModules()
+    return store.fetchLecturerModules()
   } else {
-    store.fetchMyStudentModules()
+    return store.fetchMyStudentModules()
   }
 })
 </script>

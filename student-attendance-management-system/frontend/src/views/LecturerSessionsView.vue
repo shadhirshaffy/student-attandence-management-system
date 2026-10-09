@@ -72,7 +72,7 @@ const sortedSessions = computed(() =>
 )
 
 onMounted(() => {
-  store.fetchMySessions()
+  return store.fetchMySessions()
 })
 
 function statusClass(status) {

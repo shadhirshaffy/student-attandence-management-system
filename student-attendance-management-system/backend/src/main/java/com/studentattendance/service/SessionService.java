@@ -2,7 +2,6 @@ package com.studentattendance.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import com.studentattendance.dto.session.SessionRequest;
 import com.studentattendance.dto.session.SessionResponse;
@@ -25,14 +24,17 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final ModuleRepository moduleRepository;
     private final LecturerRepository lecturerRepository;
+    private final AttendanceTokenService attendanceTokenService;
 
     public SessionService(
             SessionRepository sessionRepository,
             ModuleRepository moduleRepository,
-            LecturerRepository lecturerRepository) {
+            LecturerRepository lecturerRepository,
+            AttendanceTokenService attendanceTokenService) {
         this.sessionRepository = sessionRepository;
         this.moduleRepository = moduleRepository;
         this.lecturerRepository = lecturerRepository;
+        this.attendanceTokenService = attendanceTokenService;
     }
 
     @Transactional
@@ -85,7 +87,7 @@ public class SessionService {
     @Transactional
     public SessionResponse activateSession(Long lecturerUserId, Long sessionId) {
         Lecturer lecturer = getLecturerByUserId(lecturerUserId);
-        Session session = findOwnedSession(lecturer, sessionId);
+        Session session = findOwnedSessionForUpdate(lecturer, sessionId);
 
         if (session.isLocked()) {
             throw new BadRequestException("Locked sessions cannot be activated.");
@@ -95,7 +97,7 @@ public class SessionService {
         }
 
         session.setStatus(SessionStatus.ACTIVE);
-        session.setAttendanceToken(UUID.randomUUID().toString());
+        session.setAttendanceToken(attendanceTokenService.generateUniqueToken());
         session.setTokenExpiry(LocalDateTime.of(session.getSessionDate(), session.getEndTime()));
         return SessionResponse.from(sessionRepository.save(session));
     }
@@ -103,7 +105,7 @@ public class SessionService {
     @Transactional
     public SessionResponse lockSession(Long lecturerUserId, Long sessionId) {
         Lecturer lecturer = getLecturerByUserId(lecturerUserId);
-        Session session = findOwnedSession(lecturer, sessionId);
+        Session session = findOwnedSessionForUpdate(lecturer, sessionId);
 
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new BadRequestException("Only active sessions can be locked.");
@@ -118,7 +120,7 @@ public class SessionService {
     @Transactional
     public SessionResponse completeSession(Long lecturerUserId, Long sessionId) {
         Lecturer lecturer = getLecturerByUserId(lecturerUserId);
-        Session session = findOwnedSession(lecturer, sessionId);
+        Session session = findOwnedSessionForUpdate(lecturer, sessionId);
 
         if (session.getStatus() != SessionStatus.ACTIVE && session.getStatus() != SessionStatus.LOCKED) {
             throw new BadRequestException("Only active or locked sessions can be completed.");
@@ -128,6 +130,15 @@ public class SessionService {
         session.setStatus(SessionStatus.COMPLETED);
         session.setTokenExpiry(LocalDateTime.now());
         return SessionResponse.from(sessionRepository.save(session));
+    }
+
+    private Session findOwnedSessionForUpdate(Lecturer lecturer, Long sessionId) {
+        Session session = sessionRepository.findForUpdateById(sessionId)
+                .orElseThrow(() -> new NotFoundException("Session not found."));
+        if (!session.getLecturer().getId().equals(lecturer.getId())) {
+            throw new AccessDeniedException("You do not own this session.");
+        }
+        return session;
     }
 
     private Lecturer getLecturerByUserId(Long lecturerUserId) {

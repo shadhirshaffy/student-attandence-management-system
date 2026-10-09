@@ -50,6 +50,31 @@ class JpaMappingTests {
     @Autowired
     private AttendanceRecordRepository attendanceRecordRepository;
 
+    @Autowired
+    private javax.sql.DataSource dataSource;
+
+    @Test
+    void schemaContainsForeignKeysAndLookupIndexes() throws Exception {
+        try (var connection = dataSource.getConnection()) {
+            var metadata = connection.getMetaData();
+            for (String table : java.util.List.of("admins", "students", "lecturers", "modules", "enrollments", "attendance_sessions", "attendance_records")) {
+                try (var keys = metadata.getImportedKeys(null, null, table)) {
+                    assertThat(keys.next()).as("foreign keys for %s", table).isTrue();
+                }
+                try (var indexes = metadata.getIndexInfo(null, null, table, false, false)) {
+                    assertThat(indexes.next()).as("indexes for %s", table).isTrue();
+                }
+            }
+        }
+    }
+
+    @Test
+    void databaseRejectsDuplicateEmail() {
+        userRepository.saveAndFlush(user("First", "duplicate@example.com", Role.ADMIN));
+        assertThatThrownBy(() -> userRepository.saveAndFlush(user("Second", "duplicate@example.com", Role.ADMIN)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
     @Test
     void createsCoreRelationshipsAndSupportsRepositoryLookups() {
         Lecturer lecturer = lecturerRepository.save(lecturer("EMP-001", "lecturer@example.com"));

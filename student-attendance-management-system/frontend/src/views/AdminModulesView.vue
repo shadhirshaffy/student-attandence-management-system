@@ -12,8 +12,8 @@
         </button>
       </header>
 
-      <div v-if="store.success" class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ store.success }}</div>
-      <div v-if="store.error" class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{{ store.error }}</div>
+      <AppAlert v-if="store.success" type="success" :message="store.success" />
+      <AppAlert v-if="store.error" type="error" :message="store.error" />
 
       <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div v-if="store.loading" class="p-8 text-center text-sm text-slate-500">Loading modules...</div>
@@ -59,9 +59,13 @@
       </section>
     </div>
 
-    <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-      <form class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl" @submit.prevent="saveModule">
-        <h2 class="text-lg font-semibold text-slate-950">{{ editingModule ? 'Edit module' : 'Create module' }}</h2>
+    <FormModal
+      v-if="showForm"
+      :title="editingModule ? 'Edit module' : 'Create module'"
+      subtitle="Maintain the module catalogue and lecturer assignment."
+      @close="showForm = false"
+    >
+      <form @submit.prevent="saveModule">
         <div class="mt-5 grid gap-4 md:grid-cols-2">
           <label class="text-sm font-medium text-slate-700">Code
             <input v-model.trim="form.moduleCode" required class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
@@ -90,18 +94,14 @@
           <button type="submit" class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white" :disabled="store.saving">{{ store.saving ? 'Saving...' : 'Save' }}</button>
         </div>
       </form>
-    </div>
+    </FormModal>
 
-    <div v-if="enrollmentModule" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-      <section class="w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-semibold text-slate-950">Enrollments: {{ enrollmentModule.moduleCode }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ enrollmentModule.moduleName }}</p>
-          </div>
-          <button class="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100" @click="enrollmentModule = null">Close</button>
-        </div>
-
+    <FormModal
+      v-if="enrollmentModule"
+      :title="`Enrollments: ${enrollmentModule.moduleCode}`"
+      :subtitle="enrollmentModule.moduleName"
+      @close="enrollmentModule = null"
+    >
         <form class="mt-5 flex flex-col gap-3 sm:flex-row" @submit.prevent="enrollSelectedStudent">
           <select v-model.number="selectedStudentId" required class="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
             <option disabled value="">Select student</option>
@@ -122,13 +122,35 @@
             </button>
           </div>
         </div>
-      </section>
-    </div>
+    </FormModal>
+
+    <ConfirmModal
+      v-if="pendingModule"
+      :title="`${pendingModule.active ? 'Deactivate' : 'Activate'} module`"
+      :message="`Are you sure you want to ${pendingModule.active ? 'deactivate' : 'activate'} ${pendingModule.moduleCode}?`"
+      :confirm-label="pendingModule.active ? 'Deactivate' : 'Activate'"
+      :danger="pendingModule.active"
+      @cancel="pendingModule = null"
+      @confirm="confirmToggleModule"
+    />
+
+    <ConfirmModal
+      v-if="pendingEnrollment"
+      title="Remove enrollment"
+      :message="`Remove ${pendingEnrollment.name} from ${enrollmentModule.moduleCode}?`"
+      confirm-label="Remove"
+      danger
+      @cancel="pendingEnrollment = null"
+      @confirm="confirmRemoveStudent"
+    />
   </AdminLayout>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import AppAlert from '../components/AppAlert.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import FormModal from '../components/FormModal.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import { useAdminUsersStore } from '../stores/adminUsersStore'
 import { useModulesStore } from '../stores/modulesStore'
@@ -139,6 +161,8 @@ const usersStore = useAdminUsersStore()
 const showForm = ref(false)
 const editingModule = ref(null)
 const enrollmentModule = ref(null)
+const pendingModule = ref(null)
+const pendingEnrollment = ref(null)
 const selectedStudentId = ref('')
 const form = reactive(defaultForm())
 
@@ -188,9 +212,13 @@ async function saveModule() {
 }
 
 async function toggleModule(module) {
-  const action = module.active ? 'deactivate' : 'activate'
-  if (!window.confirm(`Are you sure you want to ${action} ${module.moduleCode}?`)) return
-  await store.setModuleActive(module.id, !module.active)
+  pendingModule.value = module
+}
+
+async function confirmToggleModule() {
+  if (!pendingModule.value) return
+  await store.setModuleActive(pendingModule.value.id, !pendingModule.value.active)
+  pendingModule.value = null
 }
 
 async function openEnroll(module) {
@@ -205,7 +233,12 @@ async function enrollSelectedStudent() {
 }
 
 async function removeStudent(student) {
-  if (!window.confirm(`Remove ${student.name} from ${enrollmentModule.value.moduleCode}?`)) return
-  await store.removeEnrollment(student.enrollmentId, enrollmentModule.value.id)
+  pendingEnrollment.value = student
+}
+
+async function confirmRemoveStudent() {
+  if (!pendingEnrollment.value) return
+  await store.removeEnrollment(pendingEnrollment.value.enrollmentId, enrollmentModule.value.id)
+  pendingEnrollment.value = null
 }
 </script>

@@ -10,10 +10,15 @@
       </div>
 
       <div class="grid gap-4 md:grid-cols-3">
-        <div v-for="card in cards" :key="card.label" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm font-medium text-slate-500">{{ card.label }}</p>
-          <p class="mt-2 text-3xl font-bold text-slate-950">{{ card.value }}</p>
-        </div>
+        <StatCard v-for="card in cards" :key="card.label" :label="card.label" :value="card.value" />
+      </div>
+
+      <AppAlert v-if="statistics.error" type="error" :message="statistics.error" />
+      <div v-if="attendance" class="grid gap-4 md:grid-cols-4">
+        <StatCard label="Completed Sessions" :value="attendance.completedSessions" />
+        <StatCard label="Attendance Records" :value="attendance.attendanceRecords" />
+        <StatCard label="Average Attendance" :value="`${attendance.averageAttendancePercentage}%`" />
+        <StatCard label="Low Attendance Cases" :value="attendance.lowAttendanceStudentModules" :hint="`Threshold: ${attendance.lowAttendanceThreshold}%`" />
       </div>
 
       <RouterLink
@@ -22,16 +27,27 @@
       >
         Manage modules
       </RouterLink>
+      <RouterLink
+        to="/admin/reports"
+        class="ml-3 inline-flex rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+      >
+        Attendance reports
+      </RouterLink>
     </section>
   </AdminLayout>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import AppAlert from '../components/AppAlert.vue'
+import StatCard from '../components/StatCard.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import { useAdminUsersStore } from '../stores/adminUsersStore'
+import { useStatisticsStore } from '../stores/statisticsStore'
 
 const store = useAdminUsersStore()
+const statistics = useStatisticsStore()
+const attendance = computed(() => statistics.adminSummary)
 
 const cards = computed(() => [
   { label: 'Total users', value: store.users.length },
@@ -40,6 +56,6 @@ const cards = computed(() => [
 ])
 
 onMounted(() => {
-  store.fetchUsers()
+  return Promise.all([store.fetchUsers(), statistics.fetchAdminSummary()])
 })
 </script>

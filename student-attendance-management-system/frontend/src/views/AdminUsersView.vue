@@ -12,12 +12,8 @@
         </button>
       </header>
 
-      <div v-if="store.success" class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-        {{ store.success }}
-      </div>
-      <div v-if="store.error" class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-        {{ store.error }}
-      </div>
+      <AppAlert v-if="store.success" type="success" :message="store.success" />
+      <AppAlert v-if="store.error" type="error" :message="store.error" />
 
       <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-col gap-3 border-b border-slate-200 p-4 md:flex-row md:items-center md:justify-between">
@@ -91,12 +87,24 @@
       @close="closeModal"
       @submit="saveUser"
     />
+
+    <ConfirmModal
+      v-if="pendingUser"
+      :title="`${pendingUser.active ? 'Deactivate' : 'Activate'} user`"
+      :message="`Are you sure you want to ${pendingUser.active ? 'deactivate' : 'activate'} ${pendingUser.name}?`"
+      :confirm-label="pendingUser.active ? 'Deactivate' : 'Activate'"
+      :danger="pendingUser.active"
+      @cancel="pendingUser = null"
+      @confirm="confirmToggleActive"
+    />
   </AdminLayout>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AppAlert from '../components/AppAlert.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import UserFormModal from '../components/UserFormModal.vue'
 import { useAdminUsersStore } from '../stores/adminUsersStore'
@@ -108,6 +116,7 @@ const search = ref('')
 const showModal = ref(false)
 const modalMode = ref('create')
 const selectedUser = ref(null)
+const pendingUser = ref(null)
 
 const roleFilter = computed(() => route.meta.roleFilter)
 const title = computed(() => route.meta.title || 'Users')
@@ -127,7 +136,7 @@ const filteredUsers = computed(() => {
 })
 
 onMounted(() => {
-  store.fetchUsers()
+  return store.fetchUsers()
 })
 
 watch(
@@ -173,11 +182,12 @@ async function saveUser(payload) {
 }
 
 async function toggleActive(user) {
-  const nextState = !user.active
-  const action = nextState ? 'activate' : 'deactivate'
-  if (!window.confirm(`Are you sure you want to ${action} ${user.name}?`)) {
-    return
-  }
-  await store.setActive(user.id, nextState)
+  pendingUser.value = user
+}
+
+async function confirmToggleActive() {
+  if (!pendingUser.value) return
+  await store.setActive(pendingUser.value.id, !pendingUser.value.active)
+  pendingUser.value = null
 }
 </script>

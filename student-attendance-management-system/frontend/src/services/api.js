@@ -24,7 +24,8 @@ api.interceptors.response.use(
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
       if (window.location.pathname !== '/login') {
-        window.location.assign('/login')
+        const redirect = window.location.pathname + window.location.search
+        window.location.assign(`/login?redirect=${encodeURIComponent(redirect)}`)
       }
     }
     return Promise.reject(error)

@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   pull_request:
@@ -10,48 +10,32 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: sams_user
-          POSTGRES_PASSWORD: sams_password
-          POSTGRES_DB: sams_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U sams_user -d sams_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://sams_user:sams_password@localhost:5432/sams_test
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Run backend tests
+        working-directory: student-attendance-management-system/backend
+        run: ./mvnw clean verify
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
+          cache-dependency-path: student-attendance-management-system/frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
+        working-directory: student-attendance-management-system/frontend
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Run Prisma migrations
-        run: npx prisma migrate deploy
-
-      - name: Run tests
-        run: npm test -- --ci
-
-      - name: Build
+      - name: Build frontend
+        working-directory: student-attendance-management-system/frontend
         run: npm run build
