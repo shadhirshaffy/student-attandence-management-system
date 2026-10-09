@@ -49,7 +49,7 @@
             <button
               type="button"
               class="absolute inset-y-0 right-0 rounded-r-md px-3 text-sm font-medium text-blue-700 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
-              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              :aria-label="showPassword ? 'Hide typed value' : 'Show typed value'"
               :aria-pressed="showPassword"
               @click="showPassword = !showPassword"
             >

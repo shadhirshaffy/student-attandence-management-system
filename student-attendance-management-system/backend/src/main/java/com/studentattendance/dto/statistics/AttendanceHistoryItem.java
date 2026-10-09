@@ -14,5 +14,9 @@ public record AttendanceHistoryItem(
         String room,
         String status,
         String markingMethod,
-        String markedAt) {
+        String markedAt,
+        Long justificationId,
+        String justificationStatus,
+        String justificationReason,
+        String justificationReviewNote) {
 }

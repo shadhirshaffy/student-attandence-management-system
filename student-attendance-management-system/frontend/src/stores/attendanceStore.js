@@ -63,6 +63,22 @@ export const useAttendanceStore = defineStore('attendance', {
       }
     },
 
+    async submitAbsenceJustification(sessionId, reason) {
+      this.saving = true
+      this.error = ''
+      this.success = ''
+      try {
+        const { data } = await api.post('/students/me/absence-justifications', { sessionId, reason })
+        this.success = 'Absence justification submitted successfully.'
+        return data
+      } catch (error) {
+        this.error = message(error)
+        throw error
+      } finally {
+        this.saving = false
+      }
+    },
+
     clearMessages() {
       this.error = ''
       this.success = ''

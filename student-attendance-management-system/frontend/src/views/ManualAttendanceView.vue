@@ -11,8 +11,8 @@
         <p class="mt-2 text-sm text-slate-500">{{ subtitle }}</p>
       </header>
 
-      <div v-if="store.error" class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{{ store.error }}</div>
-      <div v-if="store.success" class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ store.success }}</div>
+      <AppAlert v-if="store.error" type="error" :message="store.error" />
+      <AppAlert v-if="store.success" type="success" :message="store.success" />
 
       <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div v-if="store.loading" class="p-8 text-center text-sm text-slate-500">Loading attendance...</div>
@@ -26,12 +26,21 @@
               <span class="ml-2 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
                 {{ attendance.sessionStatus }}
               </span>
+              <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{{ presentCount }} present</span>
+                <span class="rounded-full bg-red-50 px-2.5 py-1 text-red-700">{{ absentCount }} absent</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{{ unmarkedCount }} unmarked</span>
+              </div>
             </div>
             <div v-if="attendance.editable" class="flex flex-wrap gap-2">
               <button class="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100" @click="markAll('PRESENT')">
                 Mark all present
               </button>
-              <button class="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800" :disabled="store.saving" @click="save">
+              <button
+                class="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                :disabled="store.saving || !canSave"
+                @click="save"
+              >
                 {{ store.saving ? 'Saving...' : 'Save attendance' }}
               </button>
             </div>
@@ -95,7 +104,7 @@
                       {{ student.status || 'UNMARKED' }}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-slate-500">{{ student.markedAt || 'Not marked' }}</td>
+                  <td class="px-4 py-3 text-slate-500">{{ formatDateTime(student.markedAt) }}</td>
                   <td class="px-4 py-3 text-slate-500">
                     <div>{{ student.markedByName || 'No marker yet' }}</div>
                     <div v-if="student.manualChangeReason" class="mt-1 max-w-xs text-xs text-slate-400">
@@ -115,6 +124,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AppAlert from '../components/AppAlert.vue'
 import AppLayout from '../layouts/AppLayout.vue'
 import { useAttendanceStore } from '../stores/attendanceStore'
 
@@ -130,6 +140,10 @@ const subtitle = computed(() =>
     ? 'Mark students present or absent, then save the attendance list.'
     : 'This session is locked, completed, or not active yet, so attendance cannot be edited.',
 )
+const presentCount = computed(() => countStatus('PRESENT'))
+const absentCount = computed(() => countStatus('ABSENT'))
+const unmarkedCount = computed(() => attendance.value?.students.filter((student) => !selectedStatuses[student.studentId]).length || 0)
+const canSave = computed(() => Boolean(changeReason.value.trim()) && Boolean(attendance.value?.students.length))
 
 onMounted(() => {
   store.clearMessages()
@@ -153,7 +167,7 @@ function markAll(status) {
 }
 
 async function save() {
-  if (!changeReason.value) {
+  if (!canSave.value) {
     store.error = 'Enter a reason before saving manual attendance.'
     return
   }
@@ -164,6 +178,19 @@ async function save() {
   }))
   await store.saveManualAttendance(route.params.id, records)
   changeReason.value = ''
+}
+
+function countStatus(status) {
+  if (!attendance.value) return 0
+  return attendance.value.students.filter((student) => selectedStatuses[student.studentId] === status).length
+}
+
+function formatDateTime(value) {
+  if (!value) return 'Not marked'
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
 }
 
 function statusClass(status) {

@@ -30,11 +30,14 @@ const classes = computed(() => {
     FALSE: 'bg-slate-100 text-slate-600',
     LOCKED: 'bg-amber-50 text-amber-700',
     WARNING: 'bg-amber-50 text-amber-700',
+    PENDING: 'bg-amber-50 text-amber-700',
     COMPLETED: 'bg-blue-50 text-blue-700',
+    APPROVED: 'bg-emerald-50 text-emerald-700',
     ADMIN: 'bg-blue-50 text-blue-700',
     LECTURER: 'bg-indigo-50 text-indigo-700',
     STUDENT: 'bg-cyan-50 text-cyan-700',
     ABSENT: 'bg-red-50 text-red-700',
+    REJECTED: 'bg-red-50 text-red-700',
     LOW: 'bg-red-50 text-red-700',
   }[key] || 'bg-slate-100 text-slate-700'
 })

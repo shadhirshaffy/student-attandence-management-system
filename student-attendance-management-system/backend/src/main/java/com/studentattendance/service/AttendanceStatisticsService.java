@@ -14,6 +14,7 @@ import com.studentattendance.dto.statistics.LecturerModuleAttendanceSummary;
 import com.studentattendance.dto.statistics.ModuleAttendanceSummary;
 import com.studentattendance.dto.statistics.StudentAttendanceSummaryResponse;
 import com.studentattendance.dto.statistics.StudentModuleAttendanceSummary;
+import com.studentattendance.entity.AbsenceJustification;
 import com.studentattendance.entity.AttendanceRecord;
 import com.studentattendance.entity.AttendanceStatus;
 import com.studentattendance.entity.Enrollment;
@@ -24,6 +25,7 @@ import com.studentattendance.entity.SessionStatus;
 import com.studentattendance.entity.Student;
 import com.studentattendance.exception.NotFoundException;
 import com.studentattendance.repository.AttendanceRecordRepository;
+import com.studentattendance.repository.AbsenceJustificationRepository;
 import com.studentattendance.repository.EnrollmentRepository;
 import com.studentattendance.repository.LecturerRepository;
 import com.studentattendance.repository.ModuleRepository;
@@ -36,6 +38,7 @@ import org.springframework.stereotype.Service;
 public class AttendanceStatisticsService {
 
     private final AttendanceRecordRepository attendanceRecordRepository;
+    private final AbsenceJustificationRepository absenceJustificationRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LecturerRepository lecturerRepository;
     private final ModuleRepository moduleRepository;
@@ -45,6 +48,7 @@ public class AttendanceStatisticsService {
 
     public AttendanceStatisticsService(
             AttendanceRecordRepository attendanceRecordRepository,
+            AbsenceJustificationRepository absenceJustificationRepository,
             EnrollmentRepository enrollmentRepository,
             LecturerRepository lecturerRepository,
             ModuleRepository moduleRepository,
@@ -52,6 +56,7 @@ public class AttendanceStatisticsService {
             StudentRepository studentRepository,
             @Value("${app.attendance.low-threshold:80}") BigDecimal lowAttendanceThreshold) {
         this.attendanceRecordRepository = attendanceRecordRepository;
+        this.absenceJustificationRepository = absenceJustificationRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lecturerRepository = lecturerRepository;
         this.moduleRepository = moduleRepository;
@@ -201,6 +206,7 @@ public class AttendanceStatisticsService {
 
     private List<AttendanceHistoryItem> buildStudentHistory(Student student, List<Enrollment> enrollments) {
         Map<Long, AttendanceRecord> recordsBySessionId = recordsBySessionId(student.getId());
+        Map<Long, AbsenceJustification> justificationsBySessionId = justificationsBySessionId(student.getId());
         return enrollments.stream()
                 .flatMap(enrollment -> completedSessions(enrollment.getModule()).stream())
                 .sorted(Comparator
@@ -209,6 +215,7 @@ public class AttendanceStatisticsService {
                         .thenComparing(session -> session.getStartTime()))
                 .map(session -> {
                     AttendanceRecord record = recordsBySessionId.get(session.getId());
+                    AbsenceJustification justification = justificationsBySessionId.get(session.getId());
                     String status = record != null && record.getStatus() == AttendanceStatus.PRESENT ? "PRESENT" : "ABSENT";
                     return new AttendanceHistoryItem(
                             session.getId(),
@@ -221,7 +228,11 @@ public class AttendanceStatisticsService {
                             session.getRoom(),
                             status,
                             record == null ? null : record.getMarkingMethod().name(),
-                            record == null || record.getMarkedAt() == null ? null : record.getMarkedAt().toString());
+                            record == null || record.getMarkedAt() == null ? null : record.getMarkedAt().toString(),
+                            justification == null ? null : justification.getId(),
+                            justification == null ? null : justification.getStatus().name(),
+                            justification == null ? null : justification.getReason(),
+                            justification == null ? null : justification.getReviewNote());
                 })
                 .toList();
     }
@@ -236,6 +247,14 @@ public class AttendanceStatisticsService {
             records.put(record.getSession().getId(), record);
         }
         return records;
+    }
+
+    private Map<Long, AbsenceJustification> justificationsBySessionId(Long studentId) {
+        Map<Long, AbsenceJustification> justifications = new HashMap<>();
+        for (AbsenceJustification justification : absenceJustificationRepository.findByStudentId(studentId)) {
+            justifications.put(justification.getSession().getId(), justification);
+        }
+        return justifications;
     }
 
     private BigDecimal percentage(int present, int eligible) {
