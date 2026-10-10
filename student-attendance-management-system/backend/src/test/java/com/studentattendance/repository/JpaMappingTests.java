@@ -77,14 +77,14 @@ class JpaMappingTests {
 
     @Test
     void createsCoreRelationshipsAndSupportsRepositoryLookups() {
-        Lecturer lecturer = lecturerRepository.save(lecturer("EMP-001", "lecturer@example.com"));
-        Student student = studentRepository.save(student("STU-001", "student@example.com"));
+        Lecturer lecturer = lecturerRepository.save(lecturer("EMP-001", "jpa.lecturer@example.com"));
+        Student student = studentRepository.save(student("STU-001", "jpa.student@example.com"));
         Module module = moduleRepository.save(module("CS101", lecturer));
         Enrollment enrollment = enrollmentRepository.save(enrollment(student, module));
         Session session = sessionRepository.save(session(module, lecturer));
         AttendanceRecord record = attendanceRecordRepository.save(attendanceRecord(session, student));
 
-        assertThat(userRepository.findByEmail("student@example.com")).isPresent();
+        assertThat(userRepository.findByEmail("jpa.student@example.com")).isPresent();
         assertThat(studentRepository.findByStudentNumber("STU-001")).contains(student);
         assertThat(moduleRepository.findByModuleCode("CS101")).contains(module);
         assertThat(moduleRepository.findByLecturer(lecturer)).containsExactly(module);
