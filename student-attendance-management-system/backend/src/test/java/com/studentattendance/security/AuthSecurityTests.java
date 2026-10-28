@@ -1037,6 +1037,53 @@ class AuthSecurityTests {
         return response.get("token").asText();
     }
 
+    @Test
+    void moduleCrudPersistsChangesAndProtectsRelatedRecords() throws Exception {
+        String admin = login("admin@example.com", "Admin@12345");
+        String lecturer = login("lecturer@example.com", "Lecturer@12345");
+        String student = login("student@example.com", "Student@12345");
+        Long lecturerId = lecturerRepository.findByEmployeeNumber("LEC-TST-001").orElseThrow().getId();
+        Long studentId = studentRepository.findByStudentNumber("STU-TST-001").orElseThrow().getId();
+        Long id = createModule(admin, "CRUD101", "Original module", lecturerId);
+
+        mockMvc.perform(put("/api/modules/{id}", id).header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"moduleCode":"CRUD102","moduleName":"Edited module","lecturerId":%d}
+                                """.formatted(lecturerId)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/modules/{id}", id).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.moduleName").value("Edited module"));
+        org.junit.jupiter.api.Assertions.assertEquals("CRUD102", moduleRepository.findById(id).orElseThrow().getModuleCode());
+
+        mockMvc.perform(delete("/api/modules/{id}", id)).andExpect(status().isUnauthorized());
+        for (String token : java.util.List.of(lecturer, student)) {
+            mockMvc.perform(delete("/api/modules/{id}", id).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isForbidden());
+        }
+        Long enrollmentId = enrollStudent(admin, studentId, id);
+        mockMvc.perform(delete("/api/modules/{id}", id).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Cannot delete a module with enrollments or sessions. Deactivate it instead."));
+        org.junit.jupiter.api.Assertions.assertTrue(enrollmentRepository.existsById(enrollmentId));
+        mockMvc.perform(delete("/api/enrollments/{id}", enrollmentId).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/modules/{id}", id).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isNoContent());
+        org.junit.jupiter.api.Assertions.assertFalse(moduleRepository.existsById(id));
+        mockMvc.perform(get("/api/modules/{id}", id).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/modules/{id}", id).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isNotFound());
+
+        Long usedId = createModule(admin, "USED101", "Module with session", lecturerId);
+        Long sessionId = createSession(lecturer, usedId);
+        mockMvc.perform(delete("/api/modules/{id}", usedId).header("Authorization", "Bearer " + admin))
+                .andExpect(status().isConflict());
+        org.junit.jupiter.api.Assertions.assertTrue(moduleRepository.existsById(usedId));
+        org.junit.jupiter.api.Assertions.assertTrue(sessionRepository.existsById(sessionId));
+    }
+
     private Long createModule(String adminToken, String moduleCode, String moduleName, Long lecturerId) throws Exception {
         MvcResult moduleResult = mockMvc.perform(post("/api/modules")
                         .header("Authorization", "Bearer " + adminToken)

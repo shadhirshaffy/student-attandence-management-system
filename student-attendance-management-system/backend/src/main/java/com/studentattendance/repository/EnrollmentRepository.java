@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
+    boolean existsByModuleId(Long moduleId);
+
     List<Enrollment> findByStudent(Student student);
 
     @EntityGraph(attributePaths = {"module", "module.lecturer", "module.lecturer.user"})

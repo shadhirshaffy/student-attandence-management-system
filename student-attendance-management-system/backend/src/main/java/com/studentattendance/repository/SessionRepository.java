@@ -15,6 +15,8 @@ import jakarta.persistence.LockModeType;
 
 public interface SessionRepository extends JpaRepository<Session, Long> {
 
+    boolean existsByModuleId(Long moduleId);
+
     // Serialize attendance writes and state changes on the same session row.
     // Avoid fetch joins here: PostgreSQL cannot lock the nullable side of an outer join.
     @Lock(LockModeType.PESSIMISTIC_WRITE)

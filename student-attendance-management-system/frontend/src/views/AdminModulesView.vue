@@ -50,6 +50,7 @@
                       {{ module.active ? 'Deactivate' : 'Activate' }}
                     </button>
                     <button class="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100" @click="openEnroll(module)">Enrollments</button>
+                    <button class="rounded-md border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50" :disabled="store.saving" @click="store.clearMessages(); pendingDelete = module">Delete</button>
                   </div>
                 </td>
               </tr>
@@ -125,6 +126,17 @@
     </FormModal>
 
     <ConfirmModal
+      v-if="pendingDelete"
+      title="Delete module"
+      :message="`Permanently delete ${pendingDelete.moduleCode} - ${pendingDelete.moduleName}? This cannot be undone. Modules with enrollments or sessions cannot be deleted.`"
+      :confirm-label="store.saving ? 'Deleting...' : 'Delete module'"
+      :busy="store.saving"
+      danger
+      @cancel="pendingDelete = null"
+      @confirm="confirmDeleteModule"
+    />
+
+    <ConfirmModal
       v-if="pendingModule"
       :title="`${pendingModule.active ? 'Deactivate' : 'Activate'} module`"
       :message="`Are you sure you want to ${pendingModule.active ? 'deactivate' : 'activate'} ${pendingModule.moduleCode}?`"
@@ -162,6 +174,7 @@ const showForm = ref(false)
 const editingModule = ref(null)
 const enrollmentModule = ref(null)
 const pendingModule = ref(null)
+const pendingDelete = ref(null)
 const pendingEnrollment = ref(null)
 const selectedStudentId = ref('')
 const form = reactive(defaultForm())
@@ -209,6 +222,17 @@ async function saveModule() {
     await store.createModule(form)
   }
   showForm.value = false
+}
+
+async function confirmDeleteModule() {
+  if (!pendingDelete.value || store.saving) return
+  try {
+    await store.deleteModule(pendingDelete.value.id)
+  } catch {
+    // The store displays the API error on the page after closing the dialog.
+  } finally {
+    pendingDelete.value = null
+  }
 }
 
 async function toggleModule(module) {

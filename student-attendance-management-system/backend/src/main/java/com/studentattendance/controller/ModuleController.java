@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,6 +55,13 @@ public class ModuleController {
             @PathVariable Long id,
             @Valid @RequestBody ModuleRequest request) {
         return ResponseEntity.ok(moduleService.updateModule(id, request));
+    }
+
+    @DeleteMapping("/modules/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteModule(@PathVariable Long id) {
+        moduleService.deleteModule(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/modules/{id}/status")

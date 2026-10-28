@@ -94,6 +94,22 @@ export const useModulesStore = defineStore('modules', {
       }
     },
 
+    async deleteModule(id) {
+      this.saving = true
+      this.clearMessages()
+      try {
+        await api.delete(`/modules/${id}`)
+        this.modules = this.modules.filter((module) => module.id !== id)
+        delete this.moduleStudents[id]
+        this.success = 'Module deleted successfully.'
+      } catch (error) {
+        this.error = message(error)
+        throw error
+      } finally {
+        this.saving = false
+      }
+    },
+
     async setModuleActive(id, active) {
       this.saving = true
       this.error = ''

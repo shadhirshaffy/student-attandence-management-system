@@ -9,6 +9,8 @@ import com.studentattendance.entity.Module;
 import com.studentattendance.exception.ConflictException;
 import com.studentattendance.exception.NotFoundException;
 import com.studentattendance.repository.LecturerRepository;
+import com.studentattendance.repository.EnrollmentRepository;
+import com.studentattendance.repository.SessionRepository;
 import com.studentattendance.repository.ModuleRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -18,10 +20,16 @@ public class ModuleService {
 
     private final ModuleRepository moduleRepository;
     private final LecturerRepository lecturerRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final SessionRepository sessionRepository;
 
-    public ModuleService(ModuleRepository moduleRepository, LecturerRepository lecturerRepository) {
+    public ModuleService(ModuleRepository moduleRepository, LecturerRepository lecturerRepository,
+            EnrollmentRepository enrollmentRepository,
+            SessionRepository sessionRepository) {
         this.moduleRepository = moduleRepository;
         this.lecturerRepository = lecturerRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.sessionRepository = sessionRepository;
     }
 
     public List<ModuleResponse> listModules() {
@@ -69,6 +77,17 @@ public class ModuleService {
         Module module = findModule(id);
         module.setActive(active);
         return ModuleResponse.from(moduleRepository.save(module));
+    }
+
+    @Transactional
+    public void deleteModule(Long id) {
+        Module module = findModule(id);
+        if (enrollmentRepository.existsByModuleId(id) || sessionRepository.existsByModuleId(id)) {
+            throw new ConflictException("Cannot delete a module with enrollments or sessions. Deactivate it instead.");
+        }
+        moduleRepository.delete(module);
+        // Flush inside the transaction so foreign keys also protect concurrent references.
+        moduleRepository.flush();
     }
 
     public List<ModuleResponse> listLecturerModulesByUserId(Long userId) {

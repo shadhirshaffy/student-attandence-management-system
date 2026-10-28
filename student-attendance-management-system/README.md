@@ -14,7 +14,8 @@ Add screenshots here after starting both applications:
 
 - JWT login for administrators, lecturers, and students
 - Admin user creation, editing, activation, and deactivation
-- Module creation, lecturer assignment, activation, and student enrollment
+- Full module CRUD: creation, listing, editing, and confirmed deletion of unused modules
+- Lecturer assignment, activation, and student enrollment; deletion is blocked for modules with enrollments or sessions
 - Lecturer-owned sessions with scheduled, active, locked, and completed states
 - Cryptographically random, expiring QR attendance links
 - QR attendance for enrolled students and lecturer manual attendance management
@@ -214,7 +215,7 @@ student-attendance-management-system/
 | --- | --- |
 | Authentication | `POST /api/auth/login`, `GET /api/auth/me` |
 | Admin users | `GET/POST /api/admin/users`, `GET/PUT /api/admin/users/{id}`, `PATCH /api/admin/users/{id}/status` |
-| Modules and enrollment | `GET/POST /api/modules`, `GET/PUT /api/modules/{id}`, `POST/DELETE /api/enrollments`, `GET /api/modules/{id}/students` |
+| Modules and enrollment | `GET/POST /api/modules`, `GET/PUT/DELETE /api/modules/{id}`, `POST/DELETE /api/enrollments`, `GET /api/modules/{id}/students` |
 | Sessions | `POST /api/sessions`, `GET /api/lecturers/me/sessions`, `PATCH /api/sessions/{id}/activate`, `/lock`, `/complete` |
 | Attendance | `GET/PUT /api/sessions/{id}/attendance/manual`, `GET /api/sessions/{id}/qr`, `POST /api/attendance/qr` |
 | Absence justifications | `GET/POST /api/students/me/absence-justifications`, `GET /api/lecturers/me/absence-justifications`, `PATCH /api/lecturers/me/absence-justifications/{id}` |
@@ -251,3 +252,7 @@ student-attendance-management-system/
 - **Browser shows a network or CORS error:** start the backend and keep `FRONTEND_BASE_URL` equal to the frontend address (`http://localhost:5173` by default).
 - **QR camera is unavailable:** grant camera access to the local site or paste the attendance token into the scan form.
 - **A session is excluded from percentages/reports:** sessions count only after the lecturer completes them. Locking blocks further marks; completing finalizes it for reporting.
+
+## Verified PostgreSQL persistence
+
+On 29 October 2026, module creation, updates, and deletion were verified through the real API and direct PostgreSQL queries across backend process restarts. See [the verification report](docs/evidence/persistence-verification.md) for results and reproduction details.

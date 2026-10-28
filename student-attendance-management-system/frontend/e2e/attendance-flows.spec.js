@@ -192,6 +192,7 @@ async function login(page, role, email, password = 'Password@123') {
   await page.getByLabel('Email').fill(email)
   await page.getByRole('textbox', { name: 'Password' }).fill(password)
   await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(new RegExp(`/${role.toLowerCase()}$`))
 }
 
 test.beforeEach(async ({ page }) => {
@@ -231,4 +232,64 @@ test('lecturer can create an attendance session', async ({ page }) => {
   await expect(page).toHaveURL(/\/lecturer\/sessions\/50$/)
   await expect(page.getByText('Programming Fundamentals')).toBeVisible()
   await expect(page.getByText('SCHEDULED')).toBeVisible()
+})
+
+
+test('admin module CRUD supports cancellation, persistence, and protected deletion', async ({ page }) => {
+  let modules = []
+  await page.route('**/api/modules', async (route) => {
+    if (route.request().method() === 'POST') {
+      modules.push({ ...route.request().postDataJSON(), id: 101, lecturerName: 'Demo Lecturer' })
+      await route.fulfill({ status: 201, json: modules[0] })
+    } else {
+      await route.fulfill({ json: modules })
+    }
+  })
+  let blocked = false
+  let deletes = 0
+  await page.route('**/api/modules/101', async (route) => {
+    if (route.request().method() === 'PUT') {
+      modules[0] = { ...modules[0], ...route.request().postDataJSON() }
+      await route.fulfill({ json: modules[0] })
+    } else if (route.request().method() === 'DELETE') {
+      deletes++
+      if (blocked) {
+        await route.fulfill({ status: 409, json: { error: 'Cannot delete a module with enrollments or sessions. Deactivate it instead.' } })
+      } else {
+        modules = []
+        await route.fulfill({ status: 204 })
+      }
+    }
+  })
+  // Override the generic users fixture with profile IDs used by module forms.
+  await page.route('**/api/admin/users', async (route) => {
+    await route.fulfill({ json: [{ id: 2, profileId: 20, name: 'Demo Lecturer', employeeNumber: 'LEC001', role: 'LECTURER', active: true }] })
+  })
+  await login(page, 'ADMIN', 'admin@example.com')
+  await page.goto('/admin/modules')
+  await page.getByRole('button', { name: 'Create module' }).click()
+  await page.getByLabel('Code', { exact: true }).fill('CRUD101')
+  await page.getByLabel('Name', { exact: true }).fill('Test module')
+  await page.getByRole('combobox', { name: 'Lecturer' }).selectOption('20')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('CRUD101 - Test module', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
+  await page.getByLabel('Name', { exact: true }).fill('Updated module')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.reload()
+  await expect(page.getByText('CRUD101 - Updated module', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  expect(deletes).toBe(0)
+  blocked = true
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('button', { name: 'Delete module', exact: true }).click()
+  await expect(page.getByText('Cannot delete a module with enrollments or sessions. Deactivate it instead.', { exact: true })).toBeVisible()
+  await expect(page.getByText('CRUD101 - Updated module', { exact: true })).toBeVisible()
+  blocked = false
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('button', { name: 'Delete module', exact: true }).click()
+  await expect(page.getByText('Module deleted successfully.', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('No modules yet', { exact: true })).toBeVisible()
 })

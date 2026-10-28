@@ -1,0 +1,80 @@
+[
+  {
+    "step": "database_connected",
+    "database": "attendence_db",
+    "engine": "PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit"
+  },
+  {
+    "step": "backend_started",
+    "pid": 40684
+  },
+  {
+    "step": "create_verified_in_postgresql",
+    "module": {
+      "id": 1,
+      "module_code": "PERSIST-20261029000818",
+      "module_name": "Persistence proof - created"
+    }
+  },
+  {
+    "step": "backend_stopped",
+    "pid": 40684
+  },
+  {
+    "step": "backend_started",
+    "pid": 31432
+  },
+  {
+    "step": "create_survived_restart",
+    "module_id": 1,
+    "name": "Persistence proof - created"
+  },
+  {
+    "step": "update_verified_in_postgresql",
+    "module": {
+      "id": 1,
+      "module_code": "PERSIST-20261029000818",
+      "module_name": "Persistence proof - updated"
+    }
+  },
+  {
+    "step": "backend_stopped",
+    "pid": 31432
+  },
+  {
+    "step": "backend_started",
+    "pid": 3568
+  },
+  {
+    "step": "update_survived_restart",
+    "module_id": 1,
+    "name": "Persistence proof - updated"
+  },
+  {
+    "step": "delete_verified_in_postgresql",
+    "module_id": 1,
+    "rows": 0
+  },
+  {
+    "step": "backend_stopped",
+    "pid": 3568
+  },
+  {
+    "step": "backend_started",
+    "pid": 15136
+  },
+  {
+    "step": "delete_survived_restart",
+    "module_id": 1,
+    "api_status": 404,
+    "rows": 0
+  },
+  {
+    "step": "result",
+    "passed": true
+  },
+  {
+    "step": "backend_stopped",
+    "pid": 15136
+  }
+]
