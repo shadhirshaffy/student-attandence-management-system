@@ -6,15 +6,15 @@
       </RouterLink>
 
       <header>
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Manual attendance</p>
-        <h1 class="mt-1 text-3xl font-bold text-slate-950">{{ title }}</h1>
+        <p class="page-eyebrow">Manual attendance</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">{{ title }}</h1>
         <p class="mt-2 text-sm text-slate-500">{{ subtitle }}</p>
       </header>
 
       <AppAlert v-if="store.error" type="error" :message="store.error" />
       <AppAlert v-if="store.success" type="success" :message="store.success" />
 
-      <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <section class="ui-panel overflow-hidden">
         <div v-if="store.loading" class="p-8 text-center text-sm text-slate-500">Loading attendance...</div>
         <div v-else-if="!attendance" class="p-8 text-center text-sm text-slate-500">Attendance data is not available.</div>
         <template v-else>
@@ -33,7 +33,7 @@
               </div>
             </div>
             <div v-if="attendance.editable" class="flex flex-wrap gap-2">
-              <button class="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100" @click="markAll('PRESENT')">
+              <button class="ui-button ui-button-secondary" :disabled="store.saving" @click="markAll('PRESENT')">
                 Mark all present
               </button>
               <button
@@ -57,14 +57,15 @@
               placeholder="Example: Student had QR scanner issue."
               required
             />
-            <p class="mt-1 text-xs text-slate-500">Saved with each changed record for audit history.</p>
+            <div class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-slate-500"><p>Only changed selections are saved with this reason.</p><span>{{ changeReason.length }}/500</span></div>
+            <p class="mt-3 text-sm font-semibold text-blue-700" role="status">{{ changedStudents.length }} pending changes</p>
           </div>
 
           <div v-if="attendance.students.length === 0" class="p-8 text-center text-sm text-slate-500">
             No students are enrolled in this module.
           </div>
-          <div v-else class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <div v-else class="overflow-x-auto" role="region" aria-label="Manual attendance list" tabindex="0">
+            <table class="w-full min-w-[760px] divide-y divide-slate-200 text-sm">
               <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th class="px-4 py-3">Student Number</th>
@@ -75,16 +76,19 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="student in attendance.students" :key="student.studentId">
+                <tr v-for="student in attendance.students" :key="student.studentId" class="hover:bg-blue-50/40">
                   <td class="px-4 py-3 font-medium text-slate-950">{{ student.studentNumber }}</td>
                   <td class="px-4 py-3">
                     <div class="font-medium text-slate-950">{{ student.studentName }}</div>
                     <div class="text-slate-500">{{ student.email }}</div>
                   </td>
                   <td class="px-4 py-3">
-                    <div v-if="attendance.editable" class="inline-flex rounded-md border border-slate-300 bg-white p-1">
+                    <div v-if="attendance.editable" class="inline-flex whitespace-nowrap rounded-md border border-slate-300 bg-white p-1">
                       <button
                         type="button"
+                        :disabled="store.saving"
+                        :aria-label="`Mark ${student.studentName} ${student.studentNumber} present`"
+                        :aria-pressed="selectedStatuses[student.studentId] === 'PRESENT'"
                         :class="selectedStatuses[student.studentId] === 'PRESENT' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
                         class="rounded px-3 py-1 text-xs font-semibold"
                         @click="selectedStatuses[student.studentId] = 'PRESENT'"
@@ -93,6 +97,9 @@
                       </button>
                       <button
                         type="button"
+                        :disabled="store.saving"
+                        :aria-label="`Mark ${student.studentName} ${student.studentNumber} absent`"
+                        :aria-pressed="selectedStatuses[student.studentId] === 'ABSENT'"
                         :class="selectedStatuses[student.studentId] === 'ABSENT' ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
                         class="rounded px-3 py-1 text-xs font-semibold"
                         @click="selectedStatuses[student.studentId] = 'ABSENT'"
@@ -143,11 +150,12 @@ const subtitle = computed(() =>
 const presentCount = computed(() => countStatus('PRESENT'))
 const absentCount = computed(() => countStatus('ABSENT'))
 const unmarkedCount = computed(() => attendance.value?.students.filter((student) => !selectedStatuses[student.studentId]).length || 0)
-const canSave = computed(() => Boolean(changeReason.value.trim()) && Boolean(attendance.value?.students.length))
+const changedStudents = computed(() => (attendance.value?.students || []).filter((student) => selectedStatuses[student.studentId] && selectedStatuses[student.studentId] !== student.status))
+const canSave = computed(() => Boolean(attendance.value?.editable) && Boolean(changeReason.value.trim()) && changedStudents.value.length > 0)
 
 onMounted(() => {
   store.clearMessages()
-  return store.fetchManualAttendance(route.params.id)
+  return Promise.allSettled([store.fetchManualAttendance(route.params.id)])
 })
 
 watch(attendance, (value) => {
@@ -156,7 +164,7 @@ watch(attendance, (value) => {
     delete selectedStatuses[key]
   }
   for (const student of value.students) {
-    selectedStatuses[student.studentId] = student.status || 'ABSENT'
+    selectedStatuses[student.studentId] = student.status || ''
   }
 })
 
@@ -167,17 +175,22 @@ function markAll(status) {
 }
 
 async function save() {
+  if (store.saving || !attendance.value?.editable) return
   if (!canSave.value) {
     store.error = 'Enter a reason before saving manual attendance.'
     return
   }
-  const records = attendance.value.students.map((student) => ({
+  const records = changedStudents.value.map((student) => ({
     studentId: student.studentId,
     status: selectedStatuses[student.studentId],
     reason: changeReason.value,
   }))
-  await store.saveManualAttendance(route.params.id, records)
-  changeReason.value = ''
+  try {
+    await store.saveManualAttendance(route.params.id, records)
+    changeReason.value = ''
+  } catch {
+    // Retain selections and the reason so the lecturer can retry.
+  }
 }
 
 function countStatus(status) {

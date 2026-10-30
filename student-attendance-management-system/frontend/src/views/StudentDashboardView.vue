@@ -1,21 +1,26 @@
 <template>
   <AppLayout>
-    <section class="space-y-6">
+    <section class="space-y-7">
       <div>
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Student</p>
-        <h1 class="text-3xl font-bold text-slate-950">Student dashboard</h1>
-        <p class="max-w-2xl text-slate-600">
+        <p class="page-eyebrow">Student workspace</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Student dashboard</h1>
+        <p class="mt-2 max-w-2xl text-sm text-slate-500">
           Track your attendance percentage by module and watch for low-attendance warnings.
         </p>
       </div>
 
+      <section class="overview-banner">
+        <div><p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">Your academic journey</p><h2 class="mt-3 text-2xl font-semibold text-white">Every class counts.</h2><p class="mt-3 max-w-xl text-sm leading-6 text-blue-100">Mark your attendance in class and keep track of your progress across modules.</p></div>
+        <RouterLink to="/student/scan" class="shrink-0 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50">Scan QR <span aria-hidden="true">&rarr;</span></RouterLink>
+      </section>
+
       <AppAlert v-if="store.error" type="error" :message="store.error" />
-      <section v-if="store.loading" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <section v-if="store.loading" class="ui-panel overflow-hidden">
         <LoadingSpinner label="Loading attendance statistics..." />
       </section>
 
       <template v-if="summary">
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-3">
           <StatCard label="Overall Attendance" :value="`${summary.overallAttendancePercentage}%`">
             <StatusBadge class="mt-3" :value="summary.overallLowAttendance ? 'LOW' : 'HEALTHY'" :label="summary.overallLowAttendance ? 'Below threshold' : 'Healthy'" />
           </StatCard>
@@ -23,37 +28,22 @@
           <StatCard label="Low Attendance Modules" :value="summary.lowAttendanceModules" :hint="`Threshold: ${summary.lowAttendanceThreshold}%`" />
         </div>
 
-        <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section class="ui-panel overflow-hidden">
           <div class="border-b border-slate-200 px-4 py-3">
             <h2 class="font-semibold text-slate-950">Module attendance</h2>
           </div>
           <div v-if="summary.modules.length === 0" class="p-8 text-center text-sm text-slate-500">No enrolled modules yet.</div>
-          <div v-else class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th class="px-4 py-3">Module</th>
-                  <th class="px-4 py-3">Percentage</th>
-                  <th class="px-4 py-3">Present</th>
-                  <th class="px-4 py-3">Absent</th>
-                  <th class="px-4 py-3">Warning</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr v-for="module in summary.modules" :key="module.moduleId">
-                  <td class="px-4 py-3">
-                    <div class="font-medium text-slate-950">{{ module.moduleCode }}</div>
-                    <div class="text-slate-500">{{ module.moduleName }}</div>
-                  </td>
-                  <td class="px-4 py-3 font-semibold text-slate-950">{{ module.attendancePercentage }}%</td>
-                  <td class="px-4 py-3 text-slate-600">{{ module.presentSessions }}</td>
-                  <td class="px-4 py-3 text-slate-600">{{ module.absentSessions }}</td>
-                  <td class="px-4 py-3">
-                    <StatusBadge :value="module.lowAttendance ? 'LOW' : 'HEALTHY'" :label="module.lowAttendance ? 'Low attendance' : 'OK'" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div v-else class="grid gap-4 p-4 sm:p-5 md:grid-cols-2">
+            <article v-for="module in summary.modules" :key="module.moduleId" class="rounded-xl border border-slate-200 p-5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0"><p class="text-xs font-bold tracking-wide text-blue-700">{{ module.moduleCode }}</p><h3 class="mt-2 break-words font-semibold text-slate-900">{{ module.moduleName }}</h3></div>
+                <StatusBadge :value="module.lowAttendance ? 'LOW' : 'HEALTHY'" :label="module.lowAttendance ? 'Needs attention' : 'On track'" />
+              </div>
+              <div class="mt-6 flex items-baseline justify-between"><span class="text-sm text-slate-500">Attendance</span><span class="text-2xl font-bold text-slate-950">{{ module.attendancePercentage }}%</span></div>
+              <progress class="attendance-progress mt-3" :class="{ 'attendance-progress-low': module.lowAttendance }" :value="module.attendancePercentage" max="100" :aria-label="`${module.moduleCode} attendance`"></progress>
+              <div class="mt-4 flex flex-wrap gap-4 text-xs text-slate-500"><span><strong class="text-slate-800">{{ module.presentSessions }}</strong> present</span><span><strong class="text-slate-800">{{ module.absentSessions }}</strong> absent</span></div>
+              <p v-if="module.lowAttendance" class="mt-4 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-800">Below the {{ summary.lowAttendanceThreshold }}% threshold. Review your attendance history for details.</p>
+            </article>
           </div>
         </section>
       </template>
@@ -61,16 +51,11 @@
       <div class="flex flex-wrap gap-3">
         <RouterLink
           to="/student/modules"
-          class="inline-flex rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+          class="ui-button ui-button-primary"
         >
           View my modules
         </RouterLink>
-        <RouterLink
-          to="/student/scan"
-          class="inline-flex rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-        >
-          Scan QR
-        </RouterLink>
+        <RouterLink to="/student/attendance-history" class="ui-button ui-button-secondary">Attendance history</RouterLink>
       </div>
     </section>
   </AppLayout>
@@ -89,6 +74,6 @@ const store = useStatisticsStore()
 const summary = computed(() => store.studentSummary)
 
 onMounted(() => {
-  return store.fetchStudentSummary()
+  return Promise.allSettled([store.fetchStudentSummary()])
 })
 </script>

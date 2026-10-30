@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+  <AppLayout class="admin-workspace">
     <slot />
   </AppLayout>
 </template>

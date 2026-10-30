@@ -2,8 +2,8 @@
   <component :is="layout">
     <section class="space-y-6">
       <header>
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Reports</p>
-        <h1 class="mt-1 text-3xl font-bold text-slate-950">Attendance reports</h1>
+        <p class="page-eyebrow">Reports</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Attendance reports</h1>
         <p class="mt-2 max-w-2xl text-sm text-slate-500">
           Generate real attendance reports by module, student, session, or date range.
         </p>
@@ -11,7 +11,8 @@
 
       <AppAlert v-if="store.error" type="error" :message="store.error" />
 
-      <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section class="ui-panel p-5 sm:p-6">
+        <h2 class="font-semibold text-slate-950">Build your report</h2><p class="mb-5 mt-1 text-sm text-slate-500">Choose a module or date range, then generate or download the results.</p>
         <div class="grid gap-4 md:grid-cols-3">
           <label class="text-sm font-medium text-slate-700">Module
             <select v-model="filters.moduleId" class="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
@@ -45,15 +46,17 @@
         </div>
 
         <div class="mt-5 flex flex-wrap gap-3">
-          <button class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800" :disabled="store.loading" @click="generate">
+          <button class="ui-button ui-button-primary" :disabled="store.loading || store.exporting" @click="generate">
             {{ store.loading ? 'Generating...' : 'Generate Report' }}
           </button>
-          <button class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" :disabled="store.exporting" @click="exportFile('csv')">
+          <button class="ui-button ui-button-secondary" :disabled="store.exporting || store.loading" @click="exportFile('csv')">
             Export CSV
           </button>
-          <button class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" :disabled="store.exporting" @click="exportFile('pdf')">
+          <button class="ui-button ui-button-secondary" :disabled="store.exporting || store.loading" @click="exportFile('pdf')">
             Export PDF
           </button>
+          <button class="ui-button ui-button-secondary" :disabled="store.loading || store.exporting" @click="resetFilters">Reset filters</button>
+          <span v-if="store.exporting" class="self-center text-sm text-blue-700" role="status">Preparing download...</span>
         </div>
       </section>
 
@@ -66,10 +69,10 @@
         :empty-message="store.report ? 'No report data matched the selected filters.' : 'Choose filters and generate a report.'"
       >
         <template #header>
-          <h2 class="font-semibold text-slate-950">Report results</h2>
+          <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="font-semibold text-slate-950">Report results</h2><p v-if="store.report" class="text-xs text-slate-500" role="status">{{ store.report.rows.length }} student-module records</p></div>
         </template>
 
-        <tr v-for="row in store.report?.rows || []" :key="`${row.studentId}-${row.moduleId}`">
+        <tr v-for="row in store.report?.rows || []" :key="`${row.studentId}-${row.moduleId}`" class="hover:bg-blue-50/40">
           <td class="px-4 py-3">
             <div class="font-medium text-slate-950">{{ row.studentNumber }}</div>
             <div class="text-slate-500">{{ row.studentName }}</div>
@@ -125,17 +128,34 @@ const columns = [
 
 onMounted(async () => {
   if (auth.role === 'ADMIN') {
-    await Promise.all([modules.fetchModules(), adminUsers.fetchUsers()])
+    await Promise.allSettled([modules.fetchModules(), adminUsers.fetchUsers()])
   } else {
-    await modules.fetchLecturerModules()
+    await Promise.allSettled([modules.fetchLecturerModules()])
   }
 })
 
-function generate() {
-  return store.generate(filters)
+function validFilters() {
+  if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
+    store.error = 'The From date must be on or before the To date.'
+    return false
+  }
+  if (filters.sessionId && (!Number.isInteger(Number(filters.sessionId)) || Number(filters.sessionId) < 1)) {
+    store.error = 'Session ID must be a positive whole number.'
+    return false
+  }
+  return true
 }
-
-function exportFile(format) {
-  return store.exportReport(format, filters)
+function resetFilters() {
+  Object.keys(filters).forEach((key) => { filters[key] = '' })
+  store.error = ''
+  store.report = null
+}
+async function generate() {
+  if (store.loading || store.exporting || !validFilters()) return
+  try { await store.generate({ ...filters }) } catch { /* Store displays API errors. */ }
+}
+async function exportFile(format) {
+  if (store.loading || store.exporting || !validFilters()) return
+  try { await store.exportReport(format, { ...filters }) } catch { /* Store displays API errors. */ }
 }
 </script>

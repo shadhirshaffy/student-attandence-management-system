@@ -234,12 +234,12 @@ student-attendance-management-system/
 ## Known limitations
 
 - Playwright uses local Chrome on this development machine when Playwright browser downloads are unavailable.
-- Absence justifications support submission and lecturer review APIs; a dedicated lecturer review screen can be added next.
+- Lecturers review absence justifications under Absence Requests. Approval records the decision without changing attendance percentages.
 - Notifications are not implemented yet.
 
 ## Future improvements
 
-- Add a lecturer absence-justification review page.
+- Add notifications for new absence requests.
 - Add email or in-app notifications for low attendance and reviewed justifications.
 - Expand E2E coverage to include admin enrollment, student QR submission, manual attendance correction, and report downloads.
 - Add screenshots to the README after running the app locally.
@@ -256,3 +256,11 @@ student-attendance-management-system/
 ## Verified PostgreSQL persistence
 
 On 29 October 2026, module creation, updates, and deletion were verified through the real API and direct PostgreSQL queries across backend process restarts. See [the verification report](docs/evidence/persistence-verification.md) for results and reproduction details.
+
+## Student self-enrollment
+
+Students can open My Modules, search Browse available modules, and enroll in any active module. The server derives the student from the signed-in account, rejects duplicate and inactive-module enrollments, and keeps administrator enrollment management restricted to admins.
+
+## Reviewing absence requests
+
+Lecturers open Absence Requests, select a pending request, choose Approve or Reject, optionally enter a review note, then confirm. Only the lecturer assigned to the module can review its requests. Students see the decision and note in Attendance History after refreshing. Approval does not change an absent record to present.

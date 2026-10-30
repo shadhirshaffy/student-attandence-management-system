@@ -8,6 +8,7 @@ import AttendanceReportsView from '../views/AttendanceReportsView.vue'
 import CreateSessionView from '../views/CreateSessionView.vue'
 import HomeView from '../views/HomeView.vue'
 import LecturerDashboardView from '../views/LecturerDashboardView.vue'
+import LecturerAbsenceRequestsView from '../views/LecturerAbsenceRequestsView.vue'
 import LecturerSessionsView from '../views/LecturerSessionsView.vue'
 import LoginView from '../views/LoginView.vue'
 import ManualAttendanceView from '../views/ManualAttendanceView.vue'
@@ -19,6 +20,7 @@ import StudentAttendanceHistoryView from '../views/StudentAttendanceHistoryView.
 import StudentQrScanView from '../views/StudentQrScanView.vue'
 
 const routes = [
+  { path: '/lecturer/absence-requests', name: 'lecturer-absence-requests', component: LecturerAbsenceRequestsView, meta: { requiresAuth: true, roles: ['LECTURER'] } },
   { path: '/:pathMatch(.*)*', redirect: '/' },
   {
     path: '/',

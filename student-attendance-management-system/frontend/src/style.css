@@ -16,3 +16,38 @@ body {
 #app {
   min-height: 100vh;
 }
+
+/* Administration surfaces and controls. */
+.page-eyebrow { color: #2563eb; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+.ui-panel { border: 1px solid #e2e8f0; border-radius: 16px; background: white; box-shadow: 0 3px 14px #0f172a04; }
+.ui-button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; border-radius: 9px; padding: .7rem 1rem; font-size: .875rem; font-weight: 600; transition: background .15s; }
+.ui-button-primary { background: #1d4ed8; color: white; box-shadow: 0 3px 6px #1d4ed820; }
+.ui-button-primary:hover { background: #1e40af; }
+.ui-button-secondary { background: white; border: 1px solid #cbd5e1; color: #334155; }
+.ui-button-secondary:hover { background: #f1f5f9; }
+.ui-input { display: block; width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: .65rem .8rem; color: #0f172a; font-size: .875rem; font-weight: 400; }
+.overview-banner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1.75rem; border-radius: 18px; background: linear-gradient(115deg, #172554, #1e40af); }
+.academic-workspace aside { background: #101f3d; border-color: #263550; }
+.academic-workspace aside > div { border-color: #263550; padding-top: 1.75rem; padding-bottom: 1.75rem; }
+.academic-workspace aside > div p:first-child { color: #93c5fd; }
+.academic-workspace aside > div p:last-child { color: #f1f5f9; }
+.academic-workspace aside nav { padding: 1rem; }
+.academic-workspace aside nav a { color: #b8c5db; padding: .8rem 1rem; border-radius: 9px; }
+.academic-workspace aside nav a:hover { background: #1c3153; color: white; }
+.academic-workspace aside nav a.nav-current { background: #2563eb; color: white; box-shadow: 0 4px 12px #0002; }
+.academic-workspace article { border-radius: 14px; }
+.academic-workspace table th { white-space: nowrap; }
+.academic-workspace table td { overflow-wrap: anywhere; }
+button:not(:disabled), select { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .55; }
+:where(a, button, input, select, textarea):focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+@media (max-width: 639px) { .overview-banner { padding: 1.4rem; } }
+
+.attendance-progress { display: block; width: 100%; min-width: 80px; height: 7px; border: 0; border-radius: 99px; overflow: hidden; background: #e2e8f0; accent-color: #2563eb; }
+.attendance-progress::-webkit-progress-bar { background: #e2e8f0; border-radius: 99px; }
+.attendance-progress::-webkit-progress-value { background: #2563eb; border-radius: 99px; }
+.attendance-progress::-moz-progress-bar { background: #2563eb; border-radius: 99px; }
+.attendance-progress-low { accent-color: #d97706; }
+.attendance-progress-low::-webkit-progress-value { background: #d97706; }
+.attendance-progress-low::-moz-progress-bar { background: #d97706; }
+@media (max-width: 767px) { .overview-banner { flex-direction: column; align-items: flex-start; } }

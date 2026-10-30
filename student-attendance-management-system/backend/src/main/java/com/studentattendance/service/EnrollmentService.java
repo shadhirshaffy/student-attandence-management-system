@@ -55,6 +55,27 @@ public class EnrollmentService {
     }
 
     @Transactional
+    public EnrollmentResponse enrollSelf(Long userId, Long moduleId) {
+        Student student = studentRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("Student profile not found."));
+        EnrollmentRequest request = new EnrollmentRequest();
+        request.setStudentId(student.getId());
+        request.setModuleId(moduleId);
+        return enroll(request);
+    }
+
+    public List<ModuleResponse> listAvailableModules(Long userId) {
+        Student student = studentRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("Student profile not found."));
+        java.util.Set<Long> enrolledIds = enrollmentRepository.findByStudentId(student.getId()).stream()
+                .map(enrollment -> enrollment.getModule().getId())
+                .collect(java.util.stream.Collectors.toSet());
+        return moduleRepository.findByActiveTrue().stream()
+                .filter(module -> !enrolledIds.contains(module.getId()))
+                .map(ModuleResponse::from).toList();
+    }
+
+    @Transactional
     public void removeEnrollment(Long id) {
         if (!enrollmentRepository.existsById(id)) {
             throw new NotFoundException("Enrollment not found.");

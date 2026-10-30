@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50" :class="{ 'academic-workspace': auth.isAuthenticated }">
     <Navbar
       :authenticated="auth.isAuthenticated"
       :role="auth.role"
@@ -66,6 +66,7 @@ const navItemsByRole = {
     { to: '/lecturer/sessions', label: 'Sessions' },
     { to: '/lecturer/attendance', label: 'Attendance' },
     { to: '/lecturer/reports', label: 'Reports' },
+    { to: '/lecturer/absence-requests', label: 'Absence Requests' },
   ],
   STUDENT: [
     { to: '/student', label: 'Dashboard' },

@@ -2,14 +2,14 @@
   <AppLayout>
     <section class="mx-auto max-w-3xl space-y-6">
       <div>
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Lecturer</p>
-        <h1 class="mt-1 text-3xl font-bold text-slate-950">Create session</h1>
+        <p class="page-eyebrow">Lecturer</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Create session</h1>
         <p class="mt-2 text-sm text-slate-500">Create an attendance session for one of your assigned modules.</p>
       </div>
 
       <div v-if="sessionsStore.error" class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{{ sessionsStore.error }}</div>
 
-      <form class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" @submit.prevent="saveSession">
+      <form class="ui-panel p-5 sm:p-7" @submit.prevent="saveSession">
         <div class="grid gap-4 md:grid-cols-2">
           <label class="text-sm font-medium text-slate-700">Module
             <select v-model.number="form.moduleId" required class="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
@@ -34,10 +34,10 @@
         </label>
 
         <div class="mt-6 flex justify-end gap-3">
-          <RouterLink to="/lecturer/sessions" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+          <RouterLink to="/lecturer/sessions" class="ui-button ui-button-secondary">
             Cancel
           </RouterLink>
-          <button type="submit" class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800" :disabled="sessionsStore.saving">
+          <button type="submit" class="ui-button ui-button-primary" :disabled="sessionsStore.saving">
             {{ sessionsStore.saving ? 'Saving...' : 'Create session' }}
           </button>
         </div>
@@ -68,12 +68,17 @@ const form = reactive({
 const activeModules = computed(() => modulesStore.myModules.filter((module) => module.active))
 
 onMounted(() => {
-  return modulesStore.fetchLecturerModules()
   sessionsStore.clearMessages()
+  return Promise.allSettled([modulesStore.fetchLecturerModules()])
 })
 
 async function saveSession() {
+  if (sessionsStore.saving) return
+  try {
   const session = await sessionsStore.createSession(form)
   router.push(`/lecturer/sessions/${session.id}`)
+  } catch {
+    // Keep entered details and display the API error above the form.
+  }
 }
 </script>

@@ -63,6 +63,9 @@ class AuthSecurityTests {
     private EnrollmentRepository enrollmentRepository;
 
     @Autowired
+    private com.studentattendance.repository.AbsenceJustificationRepository absenceJustificationRepository;
+
+    @Autowired
     private AttendanceRecordRepository attendanceRecordRepository;
 
     @Autowired
@@ -73,6 +76,7 @@ class AuthSecurityTests {
 
     @BeforeEach
     void setUp() {
+        absenceJustificationRepository.deleteAll();
         attendanceRecordRepository.deleteAll();
         enrollmentRepository.deleteAll();
         sessionRepository.deleteAll();
@@ -639,7 +643,8 @@ class AuthSecurityTests {
                         .content("""
                                 {"token":"%s"}
                                 """.formatted(token)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("You are not enrolled in this module. Ask your administrator to enroll you before submitting attendance."));
 
         mockMvc.perform(post("/api/attendance/qr")
                         .header("Authorization", "Bearer " + studentToken)
@@ -1082,6 +1087,105 @@ class AuthSecurityTests {
                 .andExpect(status().isConflict());
         org.junit.jupiter.api.Assertions.assertTrue(moduleRepository.existsById(usedId));
         org.junit.jupiter.api.Assertions.assertTrue(sessionRepository.existsById(sessionId));
+    }
+
+    @Test
+    void studentsCanEnrollOnlyThemselvesInActiveModulesAndThenMarkAttendance() throws Exception {
+        String admin = login("admin@example.com", "Admin@12345");
+        String lecturer = login("lecturer@example.com", "Lecturer@12345");
+        String student = login("student@example.com", "Student@12345");
+        Long lecturerId = lecturerRepository.findByEmployeeNumber("LEC-TST-001").orElseThrow().getId();
+        Long studentId = studentRepository.findByStudentNumber("STU-TST-001").orElseThrow().getId();
+        Long otherId = createStudent("other.enroll@example.com", "Other Student", "Other@12345", "SELF-002").getId();
+        Long moduleId = createModule(admin, "SELF101", "Self enrollment", lecturerId);
+        Long inactiveId = createModule(admin, "CLOSED101", "Inactive module", lecturerId);
+        mockMvc.perform(patch("/api/modules/{id}/status", inactiveId).header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"active\":false}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/students/me/available-modules")).andExpect(status().isUnauthorized());
+        for (String token : java.util.List.of(admin, lecturer)) {
+            mockMvc.perform(get("/api/students/me/available-modules").header("Authorization", "Bearer " + token))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(post("/api/students/me/modules/{id}", moduleId).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isForbidden());
+        }
+        mockMvc.perform(get("/api/students/me/available-modules").header("Authorization", "Bearer " + student))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(moduleId));
+        mockMvc.perform(post("/api/students/me/modules/{id}", inactiveId).header("Authorization", "Bearer " + student))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/students/me/modules/999999").header("Authorization", "Bearer " + student))
+                .andExpect(status().isNotFound());
+        // An injected student ID must never determine who gets enrolled.
+        mockMvc.perform(post("/api/students/me/modules/{id}", moduleId).header("Authorization", "Bearer " + student)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"studentId\":%d}".formatted(otherId)))
+                .andExpect(status().isCreated());
+        org.junit.jupiter.api.Assertions.assertTrue(enrollmentRepository.existsByStudentIdAndModuleId(studentId, moduleId));
+        org.junit.jupiter.api.Assertions.assertFalse(enrollmentRepository.existsByStudentIdAndModuleId(otherId, moduleId));
+        mockMvc.perform(get("/api/students/me/modules").header("Authorization", "Bearer " + student))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(moduleId));
+        mockMvc.perform(get("/api/students/me/available-modules").header("Authorization", "Bearer " + student))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        mockMvc.perform(post("/api/students/me/modules/{id}", moduleId).header("Authorization", "Bearer " + student))
+                .andExpect(status().isConflict());
+        Long sessionId = createSession(lecturer, moduleId);
+        String qrToken = activateSessionAndReturnToken(lecturer, sessionId);
+        mockMvc.perform(post("/api/attendance/qr").header("Authorization", "Bearer " + student)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"%s\"}".formatted(qrToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PRESENT"));
+    }
+
+    @Test
+    void assignedLecturerReviewsAbsenceRequestsAndStudentSeesDecision() throws Exception {
+        String admin = login("admin@example.com", "Admin@12345");
+        String lecturer = login("lecturer@example.com", "Lecturer@12345");
+        String student = login("student@example.com", "Student@12345");
+        createLecturer("other.review@example.com", "Other Lecturer", "Other@12345", "REVIEW-OTHER");
+        String other = login("other.review@example.com", "Other@12345");
+        Long lecturerId = lecturerRepository.findByEmployeeNumber("LEC-TST-001").orElseThrow().getId();
+        Long studentId = studentRepository.findByStudentNumber("STU-TST-001").orElseThrow().getId();
+        Long moduleId = createModule(admin, "REVIEW101", "Review module", lecturerId);
+        enrollStudent(admin, studentId, moduleId);
+        mockMvc.perform(get("/api/lecturers/me/absence-justifications")).andExpect(status().isUnauthorized());
+        for (String role : java.util.List.of(admin, student)) {
+            mockMvc.perform(get("/api/lecturers/me/absence-justifications").header("Authorization", "Bearer " + role))
+                    .andExpect(status().isForbidden());
+        }
+        for (String decision : java.util.List.of("APPROVED", "REJECTED")) {
+            Long sessionId = createSession(lecturer, moduleId);
+            activateSessionAndReturnToken(lecturer, sessionId);
+            mockMvc.perform(patch("/api/sessions/{id}/lock", sessionId).header("Authorization", "Bearer " + lecturer)).andExpect(status().isOk());
+            mockMvc.perform(patch("/api/sessions/{id}/complete", sessionId).header("Authorization", "Bearer " + lecturer)).andExpect(status().isOk());
+            MvcResult result = mockMvc.perform(post("/api/students/me/absence-justifications").header("Authorization", "Bearer " + student)
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"sessionId\":%d,\"reason\":\"Transport delay\"}".formatted(sessionId)))
+                    .andExpect(status().isCreated()).andReturn();
+            Long id = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
+            String review = "{\"status\":\"%s\",\"reviewNote\":\"Reviewed test explanation\"}".formatted(decision);
+            for (String role : java.util.List.of(admin, student, other)) {
+                mockMvc.perform(patch("/api/lecturers/me/absence-justifications/{id}", id).header("Authorization", "Bearer " + role)
+                                .contentType(MediaType.APPLICATION_JSON).content(review)).andExpect(status().isForbidden());
+            }
+            mockMvc.perform(patch("/api/lecturers/me/absence-justifications/{id}", id).header("Authorization", "Bearer " + lecturer)
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"PENDING\"}"))
+                    .andExpect(status().isBadRequest());
+            mockMvc.perform(patch("/api/lecturers/me/absence-justifications/{id}", id).header("Authorization", "Bearer " + lecturer)
+                            .contentType(MediaType.APPLICATION_JSON).content(review))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.status").value(decision))
+                    .andExpect(jsonPath("$.reviewNote").value("Reviewed test explanation"))
+                    .andExpect(jsonPath("$.reviewedByName").value("Lecturer User"))
+                    .andExpect(jsonPath("$.reviewedAt").isNotEmpty());
+        }
+        mockMvc.perform(get("/api/lecturers/me/absence-justifications").header("Authorization", "Bearer " + other))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        mockMvc.perform(get("/api/lecturers/me/absence-justifications").header("Authorization", "Bearer " + lecturer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+        mockMvc.perform(get("/api/students/me/absence-justifications").header("Authorization", "Bearer " + student))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[*].status", org.hamcrest.Matchers.hasItems("APPROVED", "REJECTED")))
+                .andExpect(jsonPath("$[0].reviewNote").value("Reviewed test explanation"));
+        mockMvc.perform(get("/api/students/me/attendance-summary").header("Authorization", "Bearer " + student))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.history[*].justificationStatus", org.hamcrest.Matchers.hasItems("APPROVED", "REJECTED")));
+        org.junit.jupiter.api.Assertions.assertEquals(0, attendanceRecordRepository.count());
     }
 
     private Long createModule(String adminToken, String moduleCode, String moduleName, Long lecturerId) throws Exception {

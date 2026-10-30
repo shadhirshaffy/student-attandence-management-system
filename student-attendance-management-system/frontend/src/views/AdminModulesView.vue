@@ -3,11 +3,11 @@
     <div class="space-y-6">
       <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Modules</p>
-          <h1 class="mt-1 text-3xl font-bold text-slate-950">Module management</h1>
+          <p class="page-eyebrow">Academic management</p>
+          <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Module management</h1>
           <p class="mt-2 text-sm text-slate-500">Create modules, assign lecturers, and manage enrollments.</p>
         </div>
-        <button class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800" @click="openCreate">
+        <button class="ui-button ui-button-primary" @click="openCreate">
           Create module
         </button>
       </header>
@@ -15,36 +15,48 @@
       <AppAlert v-if="store.success" type="success" :message="store.success" />
       <AppAlert v-if="store.error" type="error" :message="store.error" />
 
-      <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div class="grid gap-3 sm:grid-cols-3">
+        <article v-for="item in moduleCounts" :key="item.label" class="ui-panel flex items-center justify-between px-5 py-4"><span class="text-sm font-medium text-slate-500">{{ item.label }}</span><span class="text-2xl font-bold text-slate-900">{{ store.loading ? '...' : item.value }}</span></article>
+      </div>
+      <section class="ui-panel overflow-hidden">
+        <div class="border-b border-slate-200 p-4 sm:p-5">
+          <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_180px]">
+            <label class="text-xs font-semibold text-slate-600">Search modules<input v-model.trim="search" type="search" placeholder="Search code, name, or lecturer..." class="ui-input mt-2" /></label>
+            <label class="text-xs font-semibold text-slate-600">Status<select v-model="statusFilter" class="ui-input mt-2"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            <label class="text-xs font-semibold text-slate-600">Sort by<select v-model="sortBy" class="ui-input mt-2"><option value="code">Module code A-Z</option><option value="name">Module name A-Z</option><option value="newest">Newest first</option></select></label>
+          </div>
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-2"><p class="text-xs text-slate-500" role="status">Showing {{ filteredModules.length }} of {{ store.modules.length }} modules</p><button v-if="search || statusFilter !== 'all' || sortBy !== 'code'" class="text-xs font-semibold text-blue-700 hover:underline" @click="resetFilters">Reset filters</button></div>
+        </div>
         <div v-if="store.loading" class="p-8 text-center text-sm text-slate-500">Loading modules...</div>
         <div v-else-if="store.modules.length === 0" class="p-8 text-center">
           <h2 class="font-semibold text-slate-950">No modules yet</h2>
           <p class="mt-1 text-sm text-slate-500">Create the first module to start enrollment.</p>
         </div>
-        <div v-else class="overflow-x-auto">
+        <div v-else-if="filteredModules.length === 0" class="px-6 py-14 text-center"><h2 class="font-semibold text-slate-950">No matching modules</h2><p class="mt-2 text-sm text-slate-500">Try another search or reset your filters.</p><button class="ui-button ui-button-secondary mt-5" @click="resetFilters">Reset filters</button></div>
+        <div v-else class="overflow-x-auto" role="region" aria-label="Module catalogue" tabindex="0">
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-4 py-3">Module</th>
-                <th class="px-4 py-3">Lecturer</th>
-                <th class="px-4 py-3">Status</th>
+                <th class="px-5 py-5 align-top">Module</th>
+                <th class="px-5 py-5 align-top">Lecturer</th>
+                <th class="px-5 py-5 align-top">Status</th>
                 <th class="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="module in store.modules" :key="module.id">
-                <td class="px-4 py-3">
+              <tr v-for="module in filteredModules" :key="module.id" class="transition-colors hover:bg-blue-50/40">
+                <td class="px-5 py-5 align-top">
                   <div class="font-medium text-slate-950">{{ module.moduleCode }} - {{ module.moduleName }}</div>
-                  <div class="max-w-xl text-slate-500">{{ module.description || 'No description' }}</div>
+                  <div class="mt-1 max-w-sm text-xs leading-5 text-slate-500">{{ module.description || 'No description' }}</div>
                 </td>
                 <td class="px-4 py-3 text-slate-600">{{ module.lecturerName || 'Unassigned' }}</td>
-                <td class="px-4 py-3">
+                <td class="px-5 py-5 align-top">
                   <span :class="module.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'" class="rounded-full px-2.5 py-1 text-xs font-semibold">
                     {{ module.active ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
-                <td class="px-4 py-3">
-                  <div class="flex flex-wrap justify-end gap-2">
+                <td class="px-5 py-5 align-top">
+                  <div class="flex min-w-48 flex-wrap justify-end gap-2">
                     <button class="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100" @click="openEdit(module)">Edit</button>
                     <button class="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100" @click="toggleModule(module)">
                       {{ module.active ? 'Deactivate' : 'Activate' }}
@@ -67,6 +79,7 @@
       @close="showForm = false"
     >
       <form @submit.prevent="saveModule">
+        <AppAlert v-if="store.error" type="error" :message="store.error" />
         <div class="mt-5 grid gap-4 md:grid-cols-2">
           <label class="text-sm font-medium text-slate-700">Code
             <input v-model.trim="form.moduleCode" required class="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
@@ -170,6 +183,31 @@ import { useModulesStore } from '../stores/modulesStore'
 const store = useModulesStore()
 const usersStore = useAdminUsersStore()
 
+const search = ref('')
+const statusFilter = ref('all')
+const sortBy = ref('code')
+const moduleCounts = computed(() => [
+  { label: 'Total modules', value: store.modules.length },
+  { label: 'Active modules', value: store.modules.filter((m) => m.active).length },
+  { label: 'Inactive modules', value: store.modules.filter((m) => !m.active).length },
+])
+const filteredModules = computed(() => {
+  const term = search.value.toLocaleLowerCase()
+  return store.modules.filter((module) => {
+    const matchesStatus = statusFilter.value === 'all' || (statusFilter.value === 'active' ? module.active : !module.active)
+    return matchesStatus && [module.moduleCode, module.moduleName, module.lecturerName].some((value) => String(value || '').toLocaleLowerCase().includes(term))
+  }).sort((a, b) => {
+    if (sortBy.value === 'newest') return b.id - a.id
+    const key = sortBy.value === 'name' ? 'moduleName' : 'moduleCode'
+    return String(a[key] || '').localeCompare(String(b[key] || ''), undefined, { numeric: true, sensitivity: 'base' })
+  })
+})
+function resetFilters() {
+  search.value = ''
+  statusFilter.value = 'all'
+  sortBy.value = 'code'
+}
+
 const showForm = ref(false)
 const editingModule = ref(null)
 const enrollmentModule = ref(null)
@@ -188,7 +226,7 @@ const availableStudents = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([store.fetchModules(), usersStore.fetchUsers()])
+  await Promise.allSettled([store.fetchModules(), usersStore.fetchUsers()])
 })
 
 function defaultForm(module = null) {
@@ -216,12 +254,17 @@ function openEdit(module) {
 }
 
 async function saveModule() {
+  if (store.saving) return
+  try {
   if (editingModule.value) {
     await store.updateModule(editingModule.value.id, form)
   } else {
     await store.createModule(form)
   }
   showForm.value = false
+  } catch {
+    // Keep the form open to display the server error.
+  }
 }
 
 async function confirmDeleteModule() {

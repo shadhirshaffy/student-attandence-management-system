@@ -1,0 +1,70 @@
+[
+  {
+    "step": "database",
+    "engine": "PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit",
+    "database": "attendence_db"
+  },
+  {
+    "step": "backend_started",
+    "pid": 42232
+  },
+  {
+    "step": "module_create_update",
+    "passed": true,
+    "module_id": 4
+  },
+  {
+    "step": "student_self_enrollment_and_duplicate_protection",
+    "passed": true
+  },
+  {
+    "step": "qr_attendance_and_duplicate_protection",
+    "passed": true,
+    "postgres_rows": 1
+  },
+  {
+    "step": "manual_audit_lock_complete",
+    "passed": true
+  },
+  {
+    "step": "export_csv",
+    "passed": true,
+    "bytes": 221
+  },
+  {
+    "step": "export_pdf",
+    "passed": true,
+    "bytes": 761
+  },
+  {
+    "step": "report_calculation",
+    "passed": true,
+    "held": 1,
+    "present": 1,
+    "percentage": 100
+  },
+  {
+    "step": "backend_stopped",
+    "pid": 42232
+  },
+  {
+    "step": "backend_started",
+    "pid": 50804
+  },
+  {
+    "step": "workflow_survived_backend_restart",
+    "passed": true
+  },
+  {
+    "step": "result",
+    "passed": true
+  },
+  {
+    "step": "backend_stopped",
+    "pid": 50804
+  },
+  {
+    "step": "temporary_data_removed",
+    "module_id": 4
+  }
+]

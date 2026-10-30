@@ -56,6 +56,22 @@ public class EnrollmentController {
         return ResponseEntity.ok(enrollmentService.listModulesForStudent(id));
     }
 
+    @GetMapping("/students/me/available-modules")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<ModuleResponse>> availableStudentModules(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return ResponseEntity.ok(enrollmentService.listAvailableModules(authenticatedUser.getUser().getId()));
+    }
+
+    @PostMapping("/students/me/modules/{moduleId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<EnrollmentResponse> enrollSelf(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable Long moduleId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                enrollmentService.enrollSelf(authenticatedUser.getUser().getId(), moduleId));
+    }
+
     @GetMapping("/students/me/modules")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<ModuleResponse>> myStudentModules(

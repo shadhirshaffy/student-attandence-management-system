@@ -9,6 +9,8 @@ export const useModulesStore = defineStore('modules', {
   state: () => ({
     modules: [],
     myModules: [],
+    availableModules: [],
+    catalogLoading: false,
     moduleStudents: {},
     studentModules: {},
     loading: false,
@@ -57,6 +59,37 @@ export const useModulesStore = defineStore('modules', {
         throw error
       } finally {
         this.loading = false
+      }
+    },
+
+    async fetchAvailableModules() {
+      this.catalogLoading = true
+      try {
+        const { data } = await api.get('/students/me/available-modules')
+        this.availableModules = data
+      } catch (error) {
+        this.error = message(error)
+        throw error
+      } finally {
+        this.catalogLoading = false
+      }
+    },
+
+    async enrollMyself(moduleId) {
+      if (this.saving) return
+      this.saving = true
+      this.clearMessages()
+      try {
+        const module = this.availableModules.find((item) => item.id === moduleId)
+        await api.post(`/students/me/modules/${moduleId}`)
+        if (module && !this.myModules.some((item) => item.id === moduleId)) this.myModules.push(module)
+        this.availableModules = this.availableModules.filter((item) => item.id !== moduleId)
+        this.success = 'You are now enrolled in this module. You can submit attendance for active sessions.'
+      } catch (error) {
+        this.error = message(error)
+        throw error
+      } finally {
+        this.saving = false
       }
     },
 

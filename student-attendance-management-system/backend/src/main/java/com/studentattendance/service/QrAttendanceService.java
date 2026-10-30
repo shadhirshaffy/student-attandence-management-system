@@ -15,6 +15,8 @@ import com.studentattendance.entity.Session;
 import com.studentattendance.entity.SessionStatus;
 import com.studentattendance.entity.Student;
 import com.studentattendance.exception.BadRequestException;
+import com.studentattendance.exception.ApiException;
+import org.springframework.http.HttpStatus;
 import com.studentattendance.exception.ConflictException;
 import com.studentattendance.exception.NotFoundException;
 import com.studentattendance.repository.AttendanceRecordRepository;
@@ -74,7 +76,8 @@ public class QrAttendanceService {
         validateQrUsable(session, request.getToken().trim());
 
         if (!enrollmentRepository.existsByStudentIdAndModuleId(student.getId(), session.getModule().getId())) {
-            throw new AccessDeniedException("You are not enrolled in this module.");
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "You are not enrolled in this module. Ask your administrator to enroll you before submitting attendance.");
         }
         if (attendanceRecordRepository.existsByStudentIdAndSessionId(student.getId(), session.getId())) {
             throw new ConflictException("Attendance has already been recorded.");

@@ -18,6 +18,9 @@ public interface ModuleRepository extends JpaRepository<Module, Long> {
     @EntityGraph(attributePaths = {"lecturer", "lecturer.user"})
     Optional<Module> findById(Long id);
 
+    @EntityGraph(attributePaths = {"lecturer", "lecturer.user"})
+    List<Module> findByActiveTrue();
+
     Optional<Module> findByModuleCode(String moduleCode);
 
     boolean existsByModuleCode(String moduleCode);
